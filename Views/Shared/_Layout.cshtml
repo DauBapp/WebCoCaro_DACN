@@ -1,0 +1,2053 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<Web_chơi_cờ_Caro.Data.ApplicationUser> SignInManager
+@inject UserManager<Web_chơi_cờ_Caro.Data.ApplicationUser> UserManager
+
+@{
+    // Define excludedPages and currentAction at the top of the layout
+    var excludedPages = new List<string> { "Login", "Register", "ForgotPassword" };
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - Web_cờ_caro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="~/css/site.css?v=@DateTime.Now.Ticks" />
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%) !important;
+            background-size: 400% 400% !important;
+            animation: gradientShift 15s ease infinite !important;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(255,255,255,0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        main {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Fix dropdown menu z-index */
+        .navbar {
+            z-index: 1030 !important;
+            position: relative;
+        }
+        
+        .dropdown-menu {
+            z-index: 1050 !important;
+        }
+        
+        .container {
+            overflow: visible !important;
+        }
+        
+        .navbar-nav .dropdown-menu {
+            position: absolute !important;
+        }
+        
+        @@keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .caro-logo {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #fff;
+            margin-right: 12px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            animation: logoPulse 2s ease-in-out infinite;
+        }
+        
+        .caro-logo:hover {
+            transform: rotate(5deg) scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        @@keyframes logoPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 40px;
+            margin-top: 40px;
+        }
+        
+        .caro-board-container {
+            background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.2);
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .caro-board-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.3);
+        }
+        
+        .player-info {
+            background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.2);
+            padding: 24px;
+            min-width: 260px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .player-info:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.4);
+        }
+        
+        main {
+            flex: 1;
+            padding: 20px 0;
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            margin-top: auto;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .footer .text-muted {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        /* Modal thông báo chiến thắng mới */
+        .victory-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .victory-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            animation: modalSlideIn 0.4s ease-out;
+        }
+
+        .victory-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .victory-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .victory-message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .victory-button {
+            background: #d4a24c;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .victory-button:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        @@keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .victory-modal.show {
+            display: block;
+        }
+
+        #friendSidebar {
+            position: fixed;
+            top: 200px;
+            right: 20px;
+            width: auto;
+            background: #fffbe6;
+            border-radius: 15px;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+            #friendSidebar:hover {
+                transform: translateY(-3px);
+            }
+
+        #friendList::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #friendList::-webkit-scrollbar-thumb {
+            background-color: #f5d88c;
+            border-radius: 10px;
+        }
+
+        #btnSearchFriends {
+            float: right;
+            margin-top: -5px;
+        }
+
+        #global-chatMessages {
+            display: flex;
+            flex-direction: column;
+            max-height: 400px;
+            overflow-y: auto;
+            background: #fdfdfd;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        /* Bong bóng tin nhắn */
+        .chat-bubble {
+            padding: 8px 12px;
+            border-radius: 15px;
+            margin: 6px 10px;
+            max-width: 70%;
+            word-wrap: break-word;
+            font-size: 15px;
+            display: inline-block;
+        }
+
+            /* Tin nhắn của chính mình (bên phải, màu xanh nhạt) */
+            .chat-bubble.mine {
+                background-color: #dcf8c6;
+                align-self: flex-end;
+                border-bottom-right-radius: 0;
+            }
+
+            /* Tin nhắn của bạn bè (bên trái, màu xám nhạt) */
+            .chat-bubble.theirs {
+                background-color: #e9ecef;
+                align-self: flex-start;
+                border-bottom-left-radius: 0;
+            }
+
+        /* Nội dung & thời gian */
+        .chat-text {
+            display: block;
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: #777;
+            text-align: right;
+            margin-top: 3px;
+        }
+
+    </style>
+</head>
+<body data-user-id="@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value">
+    @if (User?.Identity?.IsAuthenticated == true && !excludedPages.Contains(currentAction ?? ""))
+    {
+        <div id="friendRequestBox" class="card mt-4 border-warning" style="display:none;">
+            <div class="card-body">
+                <h6 class="text-warning"><i class="fas fa-user-plus me-2"></i>Lời mời kết bạn</h6>
+                <ul id="friendRequestList" class="list-group mt-2"></ul>
+            </div>
+        </div>
+
+        <!-- Danh sách bạn bè bên phải -->
+        <div id="friendSidebar" class="card shadow border-0">
+            <div class="card-body p-3">
+                <h6 class="mb-3 text-warning fw-bold">
+                    <i class="fas fa-user-friends me-2"></i>Danh sách bạn bè
+                    <button id="btnSearchFriends" class="btn btn-sm btn-outline-warning">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </h6>
+                <div id="friendList" style="max-height: 400px; overflow-y: auto;">
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="friendSearchModal" tabindex="-1" aria-labelledby="friendSearchModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-warning">
+                    <div class="modal-header bg-warning text-white">
+                        <h5 class="modal-title" id="friendSearchModalLabel"><i class="fas fa-search me-2"></i>Tìm người chơi</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="friendSearchInput" class="form-control mb-3" placeholder="Nhập tên hoặc ID người chơi...">
+                        <ul id="friendSearchResults" class="list-group" style="max-height:300px; overflow-y:auto;"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    }
+
+    <!-- 🟡 Hộp chat -->
+    <div id="chatBox" class="card shadow border-0 position-fixed bottom-0 end-0 m-3"
+         style="width: 340px; display: none; z-index: 1050;">
+        <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+            <span id="chatFriendName">Chat</span>
+            <button class="btn btn-sm btn-light" onclick="closeChat()">✖</button>
+        </div>
+
+        <div class="card-body" id="global-chatMessages"
+             style="height: 350px; overflow-y: auto; background-color: #fdfcf3;"></div>
+
+        <div class="card-footer p-2 bg-light">
+            <div class="input-group">
+                <input id="global-chatInput" type="text" class="form-control" placeholder="Nhập tin nhắn..." />
+                <button class="btn btn-warning" onclick="sendChatMessage()">Gửi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="inviteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p id="inviteMessage"></p>
+                    <div class="text-end">
+                        <button class="btn btn-success" id="AcceptInvite">Chấp nhận</button>
+                        <button class="btn btn-danger" data-bs-dismiss="modal">Từ chối</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal thông báo chiến thắng mới -->
+    <div id="victoryModal" class="victory-modal">
+        <div class="victory-content">
+            <span class="victory-icon" id="victoryIcon">🏆</span>
+            <div class="victory-title" id="victoryTitle">Chiến thắng!</div>
+            <div class="victory-message" id="victoryMessage">Chúc mừng bạn đã chiến thắng!</div>
+            <button class="victory-button" onclick="closeVictoryModal()">Tiếp tục</button>
+        </div>
+    </div>
+    
+    <!-- Navigation -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%); backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                    <span class="caro-logo">♟️</span>
+                    <span class="fw-bold" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Web Cờ Caro</span>
+                </a>
+                
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="Index" style="color: rgba(255,255,255,0.9); transition: all 0.3s ease;">
+                                <i class="fas fa-home me-1"></i>Trang chủ
+                            </a>
+                        </li>
+                        
+                        @if (SignInManager.IsSignedIn(User!))
+                        {
+                            @if (User!.IsInRole("Admin"))
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" style="color: rgba(255,255,255,0.9); transition: all 0.3s ease;">
+                                        <i class="fas fa-cog me-1"></i>Admin
+                                    </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users"><i class="fas fa-users me-2"></i>Quản lý người dùng</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Statistics"><i class="fas fa-chart-bar me-2"></i>Thống kê</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="BanHistory"><i class="fas fa-history me-2"></i>Lịch sử cấm</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Database" asp-action="Index"><i class="fas fa-database me-2"></i>Quản lý DB</a></li>
+                                </ul>
+                            </li>
+                        }
+                    }
+                </ul>
+                
+                <ul class="navbar-nav">
+                        @if (SignInManager.IsSignedIn(User!))
+                        {
+                            <li class="nav-item dropdown">
+                                @{
+                                    Web_chơi_cờ_Caro.Data.ApplicationUser? __currentUser = null;
+                                    if (SignInManager.IsSignedIn(User!))
+                                    {
+                                        __currentUser = await UserManager.GetUserAsync(User!);
+                                    }
+                                }
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" style="color: rgba(255,255,255,0.9); transition: all 0.3s ease;">
+                                    <i class="fas fa-user me-1"></i>@(__currentUser?.DisplayName ?? __currentUser?.UserName ?? User!.Identity?.Name)
+                                </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="Index"><i class="fas fa-home me-2"></i>Trang chủ</a></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="PlayAI"><i class="fas fa-robot me-2"></i>Chơi với AI</a></li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile"><i class="fas fa-user-cog me-2"></i>Quản lý tài khoản</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post" style="display: inline;">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Account" asp-action="Login" style="color: rgba(255,255,255,0.9); transition: all 0.3s ease;">
+                                <i class="fas fa-sign-in-alt me-1"></i>Đăng nhập
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-outline-light ms-2" asp-controller="Account" asp-action="Register" style="border-radius: 20px; padding: 6px 20px; transition: all 0.3s ease;">
+                                <i class="fas fa-user-plus me-1"></i>Đăng ký
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+    </header>
+
+    <main role="main">
+        @if (IsSectionDefined("CaroBoard") || IsSectionDefined("PlayerInfo"))
+        {
+            <div class="main-content">
+                <div class="caro-board-container">
+                    @RenderSection("CaroBoard", required: false)
+                </div>
+                <div class="player-info">
+                    @RenderSection("PlayerInfo", required: false)
+                </div>
+            </div>
+        }
+        else
+        {
+            @RenderBody()
+        }
+    </main>
+    <footer class="footer">
+        <div class="container text-center">
+            <span class="text-muted">&copy; 2025 - Web_cờ_caro</span>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        console.log('=== LAYOUT SCRIPT LOADED ===');
+        console.log('Testing if JavaScript works...');
+//==========================================================================================================
+        // GAME HUB + FRIEND + CHAT SYSTEM - FULLY FIXED
+        let chatConnection = null;
+        let currentChatFriend = null;
+        let gameHubConnection; // Global reference
+
+        // 1. CHAT HUB
+        async function initChatHub() {
+            try {
+                chatConnection = new signalR.HubConnectionBuilder()
+                    .withUrl("/chatHub")
+                    .build();
+
+                // Nhận tin nhắn realtime
+                chatConnection.on("ReceiveMessage", (msg) => {
+                    appendChatMessage(msg, true);
+                });
+
+                // Tải lịch sử tin nhắn
+                chatConnection.on("ChatHistory", (messages) => {
+                    const chatBox = document.getElementById("global-chatMessages");
+                    if (!chatBox) return;
+
+                    chatBox.innerHTML = "";
+                    const myId = document.body.dataset.userId;
+
+                    messages.forEach(m => appendChatMessage(m, false, myId));
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                });
+                chatConnection.onclose(async () => {
+                    console.warn("ChatHub disconnected. Reconnecting...");
+                    setTimeout(initChatHub, 2000);
+                });
+
+                await chatConnection.start();
+                console.log("ChatHub connected");
+            } catch (err) {
+                console.error("Lỗi kết nối ChatHub:", err);
+            }
+        }
+
+        function appendChatMessage(msg, scroll = true, myId = null) {
+            const chatBox = document.getElementById("global-chatMessages");
+            if (!chatBox) return;
+
+            if (myId === null) myId = document.body.dataset.userId;
+            const isMine = msg.senderId === myId;
+
+            const time = new Date(msg.sentAt).toLocaleTimeString("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+
+            const bubble = document.createElement ("div");
+            bubble.className = `chat-bubble ${isMine ? "mine" : "theirs"}`;
+            bubble.innerHTML = `
+                <div class="chat-text">${escapeHtml(msg.message)}</div>
+                <div class="chat-time">${time}</div>
+            `;
+
+            chatBox.appendChild(bubble);
+            if (scroll) chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Mở chat
+        async function openChat(friendId, friendName) {
+            currentChatFriend = friendId;
+            document.getElementById("chatFriendName").textContent = friendName;
+            document.getElementById("chatBox").style.display = "block";
+            await chatConnection?.invoke("LoadChatHistory", friendId);
+        }
+
+        // Gửi tin nhắn
+        async function sendChatMessage() {
+            const input = document.getElementById("global-chatInput");
+            const msg = input.value.trim();
+            if (msg && currentChatFriend && chatConnection) {
+                await chatConnection.invoke("SendMessage", currentChatFriend, msg);
+                input.value = "";
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Đóng chat
+        function closeChat() {
+            document.getElementById("chatBox").style.display = "none";
+            currentChatFriend = null;
+        }
+
+        // 2. PRESENCE HUB (Tìm bạn, online/offline)
+        let presenceConnection = null;
+
+        function initPresenceHub() {
+            if (typeof signalR === 'undefined') {
+                console.warn("SignalR chưa load → tắt tính năng bạn bè");
+                return;
+            }
+
+            presenceConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/presenceHub")
+                .configureLogging(signalR.LogLevel.Debug)
+                .build();
+
+            // Danh sách bạn bè
+            presenceConnection.on("ActiveFriendsList", renderFriendList);
+
+            // Cập nhật trạng thái online/offline
+            presenceConnection.on("PresenceUpdated", updateFriendStatus);
+
+            // Cập nhật avatar của bạn bè
+            presenceConnection.on("AvatarUpdated", updateFriendAvatar);
+
+            // Lời mời kết bạn
+            presenceConnection.on("PendingFriendRequests", renderFriendRequests);
+            presenceConnection.on("FriendRequestResponse", handleFriendResponse);
+            presenceConnection.on("FriendRequestSent", () => {
+                showAlert("Đã gửi lời mời kết bạn!", "success");
+            });
+            presenceConnection.on("FriendRequestFailed", (msg) => {
+                showAlert("Lỗi: " + msg, "danger");
+            });
+
+            // ✅ Xử lý reconnection tự động
+            presenceConnection.onclose(async () => {
+                console.log("PresenceHub disconnected, đang thử kết nối lại...");
+                await reconnectPresenceHub();
+            });
+
+            // Khởi động
+            presenceConnection.start()
+                .then(async () => {
+                    console.log("✅ PresenceHub connected");
+                    await presenceConnection.invoke("GetActiveFriends");
+                    await presenceConnection.invoke("GetPendingFriendRequests");
+                })
+                .catch(err => {
+                    console.error("❌ Lỗi kết nối PresenceHub:", err);
+                    // Thử kết nối lại sau 3 giây
+                    setTimeout(reconnectPresenceHub, 3000);
+                });
+
+            // ✅ Hàm reconnect
+            async function reconnectPresenceHub() {
+                if (!presenceConnection) return;
+                
+                try {
+                    await presenceConnection.start();
+                    console.log("✅ PresenceHub reconnected");
+                    await presenceConnection.invoke("GetActiveFriends");
+                    await presenceConnection.invoke("GetPendingFriendRequests");
+                } catch (err) {
+                    console.error("❌ Lỗi reconnect PresenceHub:", err);
+                    // Thử lại sau 5 giây
+                    setTimeout(reconnectPresenceHub, 5000);
+                }
+            }
+        }
+
+        // Render danh sách bạn
+        function renderFriendList(friends) {
+            const list = document.getElementById("friendList");
+            if (!list) return;
+
+            list.innerHTML = friends.length === 0
+                ? `<div class="text-center text-muted">Không có bạn bè nào.</div>`
+                : friends.map(friend => {
+                    const isOnline = friend.status?.toLowerCase() === "online";
+                    const statusColor = isOnline ? "text-success" : "text-secondary";
+                    const btnClass = isOnline ? "btn-outline-warning" : "btn-outline-secondary";
+                    const disabled = isOnline ? "" : "disabled";
+
+                    return `
+                        <div class="friend-item d-flex align-items-center p-2 mb-2 rounded bg-white">
+                            <img src="${friend.avatarUrl}" class="rounded-circle me-2" width="36" height="36">
+                            <div class="flex-grow-1">
+                                <strong>${friend.name}</strong><br>
+                                <small class="${statusColor}">${friend.status}</small>
+                            </div>
+                            <button class="btn btn-sm ${btnClass} ms-2 invite-btn" ${disabled} data-friend-id="${friend.id}">
+                                Mời
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning ms-2" onclick="openChat('${friend.id}', '${escapeHtml(friend.name)}')">
+                                <i class="fas fa-comments"></i>
+                            </button>
+                        </div>`;
+                }).join("");
+
+            // Gán sự kiện cho nút mời (dùng event delegation)
+            list.querySelectorAll(".invite-btn").forEach(btn => {
+                btn.onclick = () => inviteFriendToRoom(btn.dataset.friendId);
+            });
+        }
+
+        // Cập nhật trạng thái
+        function updateFriendStatus(user) {
+            const items = document.querySelectorAll("#friendList .friend-item");
+            items.forEach(item => {
+                const nameEl = item.querySelector("strong");
+                if (nameEl && nameEl.textContent.trim() === user.name) {
+                    const statusEl = item.querySelector("small");
+                    const btn = item.querySelector(".invite-btn");
+
+                    // ✅ So sánh status không phân biệt hoa thường
+                    const isOnline = user.status?.toLowerCase() === "online";
+                    if (isOnline) {
+                        statusEl.className = "text-success";
+                        statusEl.textContent = "Online";
+                        btn.className = "btn btn-sm btn-outline-warning ms-2 invite-btn";
+                        btn.disabled = false;
+                    } else {
+                        statusEl.className = "text-secondary";
+                        statusEl.textContent = "Offline";
+                        btn.className = "btn btn-sm btn-outline-secondary ms-2 invite-btn";
+                        btn.disabled = true;
+                    }
+
+                    // Cập nhật avatar nếu có
+                    if (user.avatarUrl) {
+                        const img = item.querySelector("img");
+                        if (img) {
+                            img.src = user.avatarUrl;
+                            img.onerror = function() {
+                                this.src = "/images/default-avatar.png";
+                            };
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cập nhật avatar của bạn bè
+        function updateFriendAvatar(friend) {
+            console.log("🖼️ Cập nhật avatar cho bạn bè:", friend);
+            
+            // Cập nhật trong danh sách bạn bè
+            const items = document.querySelectorAll("#friendList .friend-item");
+            items.forEach(item => {
+                const nameEl = item.querySelector("strong");
+                if (nameEl && nameEl.textContent.trim() === friend.name) {
+                    const img = item.querySelector("img");
+                    if (img && friend.avatarUrl) {
+                        img.src = friend.avatarUrl;
+                        img.onerror = function() {
+                            this.src = "/images/default-avatar.png";
+                        };
+                    }
+                }
+            });
+
+            // Cập nhật trong kết quả tìm kiếm nếu có
+            const searchItems = document.querySelectorAll("#friendSearchResults .list-group-item");
+            searchItems.forEach(item => {
+                const nameEl = item.querySelector("strong");
+                if (nameEl && nameEl.textContent.trim() === friend.name) {
+                    const img = item.querySelector("img");
+                    if (img && friend.avatarUrl) {
+                        img.src = friend.avatarUrl;
+                        img.onerror = function() {
+                            this.src = "/images/default-avatar.png";
+                        };
+                    }
+                }
+            });
+
+            // Cập nhật trong ActiveFriendsList component (nếu đang sử dụng React)
+            // Component sẽ tự cập nhật thông qua PresenceUpdated event
+        }
+
+        // Render lời mời kết bạn
+        function renderFriendRequests(requests) {
+            const box = document.getElementById("friendRequestBox");
+            const list = document.getElementById("friendRequestList");
+            if (!box || !list) return;
+
+            if (!requests || requests.length === 0) {
+                box.style.display = "none";
+                return;
+            }
+
+            box.style.display = "block";
+            list.innerHTML = requests.map(req => `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><strong>${req.name}</strong> đã gửi lời mời kết bạn</span>
+                    <div>
+                        <button class="btn btn-sm btn-success me-2" onclick="respondFriend('${req.id}', true, event)">Chấp nhận</button>
+                        <button class="btn btn-sm btn-danger" onclick="respondFriend('${req.id}', false, event)">Từ chối</button>
+                    </div>
+                </li>
+            `).join("");
+        }
+
+        // Phản hồi lời mời
+        window.respondFriend = async function (senderId, accept, event) {
+            if (!presenceConnection) return;
+            try {
+                await presenceConnection.invoke("RespondFriendRequest", senderId, accept);
+                event.target.closest("li").remove();
+                setTimeout(() => presenceConnection.invoke("GetPendingFriendRequests"), 300);
+            } catch (err) {
+                console.error("Lỗi phản hồi lời mời:", err);
+            }
+        };
+
+        window.handleFriendResponse = function (res) {
+            showAlert(res.status === "Accepted"
+                ? `${res.id} đã chấp nhận lời mời!`
+                : `${res.id} đã từ chối.`, res.status === "Accepted" ? "success" : "danger");
+            presenceConnection.invoke("GetActiveFriends");
+        };
+
+        // Gửi lời mời kết bạn
+        window.sendFriendRequest = function (receiverId) {
+            if (!presenceConnection) return;
+            presenceConnection.invoke("SendFriendRequest", receiverId)
+                .then(() => {
+                    const btn = document.querySelector(`button[onclick*="sendFriendRequest('${receiverId}')"]`);
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = `<i class="fas fa-hourglass-half"></i> Đã gửi`;
+                    }
+                })
+                .catch(err => console.error("Lỗi gửi lời mời:", err));
+        };
+
+        // Tìm kiếm bạn realtime
+        function initFriendSearch() {
+            const input = document.getElementById("friendSearchInput");
+            const resultList = document.getElementById("friendSearchResults");
+            if (!input || !resultList) return;
+
+            let searchDelay = null;
+            input.addEventListener("input", () => {
+                clearTimeout(searchDelay);
+                const term = input.value.trim();
+                if (!term) {
+                    resultList.innerHTML = "";
+                    return;
+                }
+
+                searchDelay = setTimeout(() => {
+                    fetch(`/api/users/search?term=${encodeURIComponent(term)}`)
+                        .then(res => res.json())
+                        .then(users => {
+                            resultList.innerHTML = users.length === 0
+                                ? `<li class="list-group-item text-muted">Không tìm thấy người chơi nào.</li>`
+                                : users.map(u => {
+                                    const isOnline = u.status?.toLowerCase() === "online";
+                                    const color = isOnline ? "text-success" : "text-secondary";
+                                    return `
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <img src="${u.avatarUrl}" class="rounded-circle me-2" width="32" height="32">
+                                                <strong>${u.name}</strong>
+                                                <small class="${color} ms-2">${u.status}</small>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="sendFriendRequest('${u.id}')">
+                                                <i class="fas fa-user-plus"></i>
+                                            </button>
+                                        </li>`;
+                                }).join("");
+                        });
+                }, 300);
+            });
+        }
+        // 3. GAME HUB (Mời chơi, vào phòng)
+
+        // HÀM MỜI BẠN
+         window.inviteFriendToRoom = async function (friendId) {
+             if (!gameHubConnection || gameHubConnection.state !== signalR.HubConnectionState.Connected) {
+                        showAlert("Đang kết nối server... Vui lòng thử lại sau!", "warning");
+                        return;
+                    }
+
+                    const myUserId = document.body.dataset.userId;
+                    if (!myUserId) {
+                        showAlert("Không lấy được ID người dùng!", "danger");
+                        return;
+                    }
+
+                    try {
+                        await gameHubConnection.invoke("InviteFriendToRoom", friendId, myUserId);
+                        showAlert("Đã gửi lời mời chơi game!", "success");
+                    } catch (err) {
+                        console.error("Lỗi mời chơi:", err);
+                        showAlert("Không thể gửi lời mời!", "danger");
+                    }
+                };
+
+                async function initializeGameHub() {
+                    try {
+                        gameHubConnection = new signalR.HubConnectionBuilder()
+                            .withUrl("/gameHub")
+                            .configureLogging(signalR.LogLevel.Information)
+                            .build();
+
+                        setupGameHubEvents();
+
+                        await gameHubConnection.start();
+                        console.log("GameHub connected!");
+
+                        await gameHubConnection.invoke("GetRoomList");
+                    } catch (err) {
+                        console.error("Lỗi kết nối GameHub:", err);
+                        setTimeout(initializeGameHub, 3000); // Tự động thử lại
+                    }
+                }
+
+                function handleIncomingInvite(roomId, senderName, rawData) {
+                    console.log("handleIncomingInvite received:", roomId, senderName, rawData);
+
+                    // Hiển thị popup xác nhận
+                    const accept = confirm(`${senderName || "Người chơi"} mời bạn vào phòng ${roomId}. Tham gia?`);
+
+                    if (accept) {
+                        gameHubConnection.invoke("AcceptInvite", roomId)
+                            .then(() => {
+                                console.log("AcceptInvite invoked for room:", roomId);
+                            })
+                            .catch(err => {
+                                console.error("AcceptInvite error:", err);
+                            });
+                    }
+                }
+
+                function setupGameHubEvents() {
+                    // -- ROOM LIST (server sends RoomListUpdated)
+                    gameHubConnection.on("RoomListUpdated", (roomList) => {
+                        console.log("RoomListUpdated (server case):", roomList);
+                    });
+
+                    // -- RoomCreated -> redirect host
+                    gameHubConnection.on("RoomCreated", (roomId) => {
+                        console.log("RoomCreated (server case):", roomId);
+                        window.location.href = `/Home/GameRoom?roomId=${roomId}`;
+                    });
+
+                    // -- ReceiveGameInvite
+                    gameHubConnection.on("ReceiveGameInvite", (data) => {
+                        console.log("ReceiveGameInvite (server case):", data);
+                        handleIncomingInvite(data.roomId ?? data.RoomId, data.senderName ?? data.SenderName, data);
+                    });
+
+                    gameHubConnection.on("InviteAccepted", (data) => {
+                        console.log("InviteAccepted (camel):", data);
+                        const roomId = data.roomId ?? data.RoomId;
+                        if (roomId) window.location.href = `/Home/GameRoom?roomId=${roomId}`;
+                    });
+
+                    // -- invitesuccess (direct to caller)
+                    gameHubConnection.on("invitesuccess", (roomId, inviterName) => {
+                        console.log("invitesuccess:", roomId, inviterName);
+                        // redirect invitee (caller)
+                        if (roomId) window.location.href = `/Home/GameRoom?roomId=${roomId}`;
+                    });
+                }
+
+        // 4. UTILS
+        function showAlert(message, type = "info") {
+            const alert = document.createElement("div");
+            alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alert.style.top = "1rem";
+            alert.style.right = "1rem";
+            alert.style.zIndex = "9999";
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        // 5. DOM READY - KHỞI TẠO TẤT CẢ
+        document.addEventListener("DOMContentLoaded", () => {
+            // Khởi tạo các hub
+            initChatHub();
+            initPresenceHub();
+        if(window.location.pathname.toLowerCase().includes("gameroom") === false)
+           {
+            initializeGameHub();
+           }
+            initFriendSearch();
+
+            // Gán sự kiện gửi chat
+            document.getElementById("btnSendChat")?.addEventListener("click", sendChatMessage);
+            document.getElementById("global-chatInput")?.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    sendChatMessage();
+                }
+            });
+
+            // Mở modal tìm bạn
+            document.getElementById("btnSearchFriends")?.addEventListener("click", () => {
+                const modal = new bootstrap.Modal(document.getElementById("friendSearchModal"));
+                modal.show();
+                document.getElementById("friendSearchInput")?.focus();
+            });
+        });
+//================================================================================================
+        // Test global functions
+        window.forceAIMove = function() {
+            console.log('Force AI move called from layout');
+            alert('Force AI works!');
+        };
+        
+        window.testAI = function() {
+            console.log('Test AI called from layout');
+            alert('Test AI works!');
+        };
+        
+        window.resetGame = function() {
+            console.log('Reset game called from layout');
+            alert('Reset game works!');
+        };
+        
+        // AI difficulty levels
+        let aiDifficulty = 'medium'; // 'medium', 'hard'
+        
+        window.setAILevel = function(level) {
+            console.log('AI level changed to:', level);
+            aiDifficulty = level;
+            
+            // Update UI
+            const levelButtons = document.querySelectorAll('.ai-level-btn');
+            levelButtons.forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+            });
+            
+            const currentLevelBtn = document.querySelector(`[data-level="${level}"]`);
+            if (currentLevelBtn) {
+                currentLevelBtn.classList.remove('btn-outline-primary');
+                currentLevelBtn.classList.add('btn-primary');
+            }
+            
+            // Toast notification will be shown by override function in PlayAI.cshtml
+            // If showToastNotification exists, use it; otherwise fallback to console
+            if (typeof showToastNotification === 'function') {
+                const levelName = level === 'medium' ? 'Trung bình' : 'Khó';
+                const iconClass = level === 'medium' ? 'fa-chart-line' : 'fa-trophy';
+                showToastNotification(`AI đã chuyển sang mức độ: ${levelName}`, iconClass);
+            }
+        };
+        
+        window.showGameRules = function() {
+            console.log('Show rules called from layout');
+            alert('Show rules works!');
+        };
+
+        // Hàm hiển thị modal thông báo chiến thắng mới
+        function showVictoryModal(title, message, icon = '🏆') {
+            const modal = document.getElementById('victoryModal');
+            const modalTitle = document.getElementById('victoryTitle');
+            const modalMessage = document.getElementById('victoryMessage');
+            const modalIcon = document.getElementById('victoryIcon');
+            
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalIcon.textContent = icon;
+            
+            modal.classList.add('show');
+        }
+
+        // Hàm đóng modal thông báo chiến thắng mới
+        function closeVictoryModal() {
+            const modal = document.getElementById('victoryModal');
+            modal.classList.remove('show');
+        }
+
+        // Đóng modal khi click bên ngoài
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('victoryModal');
+            if (event.target === modal) {
+                closeVictoryModal();
+            }
+        });
+        
+        // ========================================
+        // GAME LOGIC - ADDED TO LAYOUT
+        // ========================================
+        
+        // Game variables
+        let currentPlayer = 'X';
+        const size = 20;
+        let boardState = Array.from({ length: size }, () => Array(size).fill(null));
+        let gameOver = false;
+
+        // Game statistics
+        let gameStats = {
+            wins: 0,
+            losses: 0,
+            draws: 0
+        };
+
+        // Update status function
+        function updateStatus() {
+            const playerStatus = document.getElementById('player-status');
+            const aiStatus = document.getElementById('ai-status');
+
+            if (!playerStatus || !aiStatus) {
+                console.log('Status elements not found');
+                return;
+            }
+
+            if (currentPlayer === 'X') {
+                playerStatus.textContent = 'Đang đánh...';
+                playerStatus.classList.remove('text-secondary');
+                playerStatus.classList.add('text-success');
+                aiStatus.textContent = 'Đang chờ...';
+                aiStatus.classList.remove('text-success');
+                aiStatus.classList.add('text-secondary');
+            } else {
+                playerStatus.textContent = 'Đang chờ...';
+                playerStatus.classList.remove('text-success');
+                playerStatus.classList.add('text-secondary');
+                aiStatus.textContent = 'Đang đánh...';
+                aiStatus.classList.remove('text-secondary');
+                aiStatus.classList.add('text-success');
+            }
+        }
+
+        // Simple AI move function
+        function makeAIMove() {
+            console.log('AI is thinking...');
+
+            if (gameOver || currentPlayer !== 'O') {
+                console.log('AI cannot move - game over or not AI turn');
+                return;
+            }
+
+            setTimeout(() => {
+                const move = (aiDifficulty === 'hard') ? getAIMoveHard() : getAIMove();
+                console.log('AI decided move:', move);
+
+                if (move) {
+                    const table = document.getElementById('caro-board');
+                    if (!table) {
+                        console.log('Table not found!');
+                        return;
+                    }
+
+                    const cell = table.rows[move.row].cells[move.col];
+                    if (cell && cell.textContent === '') {
+                        cell.innerHTML = '<span class="caro-o">O</span>';
+                        boardState[move.row][move.col] = 'O';
+                        console.log('AI placed O at:', move.row, move.col);
+
+                        if (checkWin(move.row, move.col, 'O')) {
+                            setTimeout(() => {
+                                showVictoryModal('AI thắng!', 'AI đã đánh bại bạn! Hãy thử lại!', '🤖');
+                                gameStats.losses++;
+                                saveStats();
+                                updateStatsDisplay();
+                            }, 100);
+                            gameOver = true;
+                            return;
+                        }
+
+                        currentPlayer = 'X';
+                        updateStatus();
+                        console.log('AI turn completed');
+                    }
+                }
+
+                // Kiểm tra hòa nếu không còn ô trống
+                const emptyCells = [];
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        if (boardState[i][j] === null) {
+                            emptyCells.push({ row: i, col: j });
+                        }
+                    }
+                }
+
+                if (emptyCells.length === 0 && !gameOver) {
+                    setTimeout(() => {
+                        showVictoryModal('Hòa!', 'Trận đấu kết thúc hòa!', '👋');
+                        gameStats.draws++;
+                        saveStats();
+                        updateStatsDisplay();
+                    }, 100);
+                    gameOver = true;
+                }
+            }, 1000);
+        }
+
+        // Get AI move - HARD VERSION with advanced minimax and deep evaluation
+        function getAIMoveHard() {
+            console.log('HARD AI: Starting advanced evaluation...');
+            
+            const emptyCells = getEmptyCells();
+            if (emptyCells.length === 0) return null;
+
+            // If first move, play center
+            if (emptyCells.length === size * size) {
+                const centerMove = { row: Math.floor(size / 2), col: Math.floor(size / 2) };
+                console.log('HARD: First move - center:', centerMove);
+                return centerMove;
+            }
+
+            // Priority 1: Immediate win
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'O';
+                if (checkWin(cell.row, cell.col, 'O')) {
+                    boardState[cell.row][cell.col] = null;
+                    console.log('HARD: Immediate win found', cell);
+                    return cell;
+                }
+                boardState[cell.row][cell.col] = null;
+            }
+
+            // Priority 2: Block immediate opponent win
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'X';
+                if (checkWin(cell.row, cell.col, 'X')) {
+                    boardState[cell.row][cell.col] = null;
+                    console.log('HARD: Blocking immediate threat', cell);
+                    return cell;
+                }
+                boardState[cell.row][cell.col] = null;
+            }
+
+            // Priority 3: Create double threat (multiple winning paths)
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'O';
+                const threats = countWinningThreats(cell.row, cell.col, 'O');
+                boardState[cell.row][cell.col] = null;
+                if (threats >= 2) {
+                    console.log('HARD: Creating double threat', cell, 'threats:', threats);
+                    return cell;
+                }
+            }
+
+            // Priority 4: Block opponent's double threat
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'X';
+                const threats = countWinningThreats(cell.row, cell.col, 'X');
+                boardState[cell.row][cell.col] = null;
+                if (threats >= 2) {
+                    console.log('HARD: Blocking double threat', cell, 'threats:', threats);
+                    return cell;
+                }
+            }
+
+            // Priority 5: Minimax with depth 2 for strategic moves
+            const strategicCells = [];
+            for (const cell of emptyCells) {
+                if (hasNeighbor(cell.row, cell.col)) {
+                    strategicCells.push(cell);
+                }
+            }
+            const searchSpace = strategicCells.length > 0 ? strategicCells : emptyCells;
+
+            // Limit search space for performance (top 20 candidates by basic evaluation)
+            let candidates = searchSpace.map(cell => ({
+                cell: cell,
+                score: evaluateMoveForPlayer(cell.row, cell.col, 'O') + 
+                       1.2 * evaluateMoveForPlayer(cell.row, cell.col, 'X')
+            }));
+            candidates.sort((a, b) => b.score - a.score);
+            const topCandidates = candidates.slice(0, Math.min(20, candidates.length));
+
+            let bestMove = topCandidates[0]?.cell || searchSpace[0];
+            let bestScore = -Infinity;
+
+            for (const candidate of topCandidates) {
+                const cell = candidate.cell;
+                
+                // Check if move allows opponent immediate win (penalty)
+                if (willOpponentHaveImmediateWinAfter(cell.row, cell.col)) {
+                    continue; // Skip this move
+                }
+
+                // Advanced evaluation with lookahead
+                boardState[cell.row][cell.col] = 'O';
+                const score = evaluateBoardPosition() + getPositionValue(cell.row, cell.col);
+                boardState[cell.row][cell.col] = null;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = cell;
+                }
+            }
+
+            console.log('HARD: Selected move', bestMove, 'with score', bestScore);
+            return bestMove;
+        }
+
+        // Count winning threats (4-in-a-row with open end)
+        function countWinningThreats(row, col, player) {
+            let threatCount = 0;
+            const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+
+            for (const [dr, dc] of dirs) {
+                let count = 1;
+                let leftOpen = false;
+                let rightOpen = false;
+
+                // Forward
+                let r = row + dr, c = col + dc;
+                while (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === player) {
+                    count++;
+                    r += dr; c += dc;
+                }
+                if (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === null) {
+                    rightOpen = true;
+                }
+
+                // Backward
+                r = row - dr; c = col - dc;
+                while (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === player) {
+                    count++;
+                    r -= dr; c -= dc;
+                }
+                if (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === null) {
+                    leftOpen = true;
+                }
+
+                // If 4 in a row with at least one open end, it's a threat
+                if (count === 4 && (leftOpen || rightOpen)) {
+                    threatCount++;
+                }
+            }
+
+            return threatCount;
+        }
+
+        // Evaluate entire board position (for AI advantage)
+        function evaluateBoardPosition() {
+            let aiScore = 0;
+            let playerScore = 0;
+
+            // Evaluate all strategic positions
+            const emptyCells = getEmptyCells();
+            for (const cell of emptyCells) {
+                if (hasNeighbor(cell.row, cell.col)) {
+                    aiScore += evaluateMoveForPlayer(cell.row, cell.col, 'O');
+                    playerScore += evaluateMoveForPlayer(cell.row, cell.col, 'X');
+                }
+            }
+
+            // Return advantage score (positive = AI advantage, negative = player advantage)
+            return aiScore - 1.5 * playerScore;
+        }
+
+        // Get position value (center is better)
+        function getPositionValue(row, col) {
+            const center = size / 2;
+            const distanceFromCenter = Math.abs(row - center) + Math.abs(col - center);
+            return Math.max(0, 1000 - distanceFromCenter * 50);
+        }
+
+        // Evaluate a move by placing temporarily and scoring patterns
+        function evaluateMoveForPlayer(row, col, player) {
+            let score = 0;
+
+            // Temporarily place
+            boardState[row][col] = player;
+
+            // Directions: horizontal, vertical, diag, anti-diag
+            const dirs = [
+                [0, 1], [1, 0], [1, 1], [1, -1]
+            ];
+
+            for (const [dr, dc] of dirs) {
+                // Count consecutive including both directions
+                let count = 1; // include current
+                let openEnds = 0;
+
+                // forward
+                let r = row + dr, c = col + dc;
+                while (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === player) {
+                    count++;
+                    r += dr; c += dc;
+                }
+                if (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === null) openEnds++;
+
+                // backward
+                r = row - dr; c = col - dc;
+                while (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === player) {
+                    count++;
+                    r -= dr; c -= dc;
+                }
+                if (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === null) openEnds++;
+
+                // Pattern-based scoring
+                score += patternScore(count, openEnds);
+            }
+
+            // Remove temporary placement
+            boardState[row][col] = null;
+
+            return score;
+        }
+
+        function patternScore(count, openEnds) {
+            // Massive scores for near-winning/winning shapes
+            if (count >= 5) return 1e9;
+            if (count === 4) {
+                if (openEnds === 2) return 5e6;   // open four
+                if (openEnds === 1) return 5e5;   // closed four
+            }
+            if (count === 3) {
+                if (openEnds === 2) return 5e4;   // open three
+                if (openEnds === 1) return 5e3;   // closed three
+            }
+            if (count === 2) {
+                if (openEnds === 2) return 3e4;   // open two
+                if (openEnds === 1) return 1000;   // closed two
+            }
+            return 100; // single stone contribution
+        }
+
+        function willOpponentHaveImmediateWinAfter(row, col) {
+            // Simulate AI move, then check if any response by X wins immediately
+            boardState[row][col] = 'O';
+            const empties = getEmptyCells();
+            for (const e of empties) {
+                boardState[e.row][e.col] = 'X';
+                const oppWins = checkWin(e.row, e.col, 'X');
+                boardState[e.row][e.col] = null;
+                if (oppWins) {
+                    boardState[row][col] = null;
+                    return true;
+                }
+            }
+            boardState[row][col] = null;
+            return false;
+        }
+
+        function getEmptyCells() {
+            const emptyCells = [];
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (boardState[i][j] === null) emptyCells.push({ row: i, col: j });
+                }
+            }
+            return emptyCells;
+        }
+
+        // Get AI move - SMART VERSION
+        function getAIMove() {
+            console.log('Getting AI move with difficulty:', aiDifficulty);
+
+            // Find all empty cells
+            const emptyCells = [];
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (boardState[i][j] === null) {
+                        emptyCells.push({ row: i, col: j });
+                    }
+                }
+            }
+
+            console.log('Empty cells found:', emptyCells.length);
+
+            if (emptyCells.length === 0) {
+                console.log('No empty cells!');
+                return null;
+            }
+
+            // If first move, play center
+            if (emptyCells.length === size * size) {
+                const centerMove = { row: Math.floor(size / 2), col: Math.floor(size / 2) };
+                console.log('First move - center:', centerMove);
+                return centerMove;
+            }
+
+            // Priority 1: Win immediately
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'O';
+                if (checkWin(cell.row, cell.col, 'O')) {
+                    boardState[cell.row][cell.col] = null;
+                    console.log('AI found winning move:', cell);
+                    return cell;
+                }
+                boardState[cell.row][cell.col] = null;
+            }
+
+            // Priority 2: Block player from winning
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'X';
+                if (checkWin(cell.row, cell.col, 'X')) {
+                    boardState[cell.row][cell.col] = null;
+                    console.log('AI blocking player win:', cell);
+                    return cell;
+                }
+                boardState[cell.row][cell.col] = null;
+            }
+
+            // Priority 3: Create 4-in-a-row for AI
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'O';
+                if (countConsecutive(cell.row, cell.col, 0, 1, 'O') + countConsecutive(cell.row, cell.col, 0, -1, 'O') - 1 >= 4 ||
+                    countConsecutive(cell.row, cell.col, 1, 0, 'O') + countConsecutive(cell.row, cell.col, -1, 0, 'O') - 1 >= 4 ||
+                    countConsecutive(cell.row, cell.col, 1, 1, 'O') + countConsecutive(cell.row, cell.col, -1, -1, 'O') - 1 >= 4 ||
+                    countConsecutive(cell.row, cell.col, 1, -1, 'O') + countConsecutive(cell.row, cell.col, -1, 1, 'O') - 1 >= 4) {
+                    boardState[cell.row][cell.col] = null;
+                    console.log('AI creating 4-in-a-row:', cell);
+                    return cell;
+                }
+                boardState[cell.row][cell.col] = null;
+            }
+
+            // Priority 4: Block player's 3-in-a-row
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'X';
+                if (countConsecutive(cell.row, cell.col, 0, 1, 'X') + countConsecutive(cell.row, cell.col, 0, -1, 'X') - 1 >= 3 ||
+                    countConsecutive(cell.row, cell.col, 1, 0, 'X') + countConsecutive(cell.row, cell.col, -1, 0, 'X') - 1 >= 3 ||
+                    countConsecutive(cell.row, cell.col, 1, 1, 'X') + countConsecutive(cell.row, cell.col, -1, -1, 'X') - 1 >= 3 ||
+                    countConsecutive(cell.row, cell.col, 1, -1, 'X') + countConsecutive(cell.row, cell.col, -1, 1, 'X') - 1 >= 3) {
+                    boardState[cell.row][cell.col] = null;
+                    console.log('AI blocking player 3-in-a-row:', cell);
+                    return cell;
+                }
+                boardState[cell.row][cell.col] = null;
+            }
+
+            // Priority 5: Create 3-in-a-row for AI
+            for (const cell of emptyCells) {
+                boardState[cell.row][cell.col] = 'O';
+                if (countConsecutive(cell.row, cell.col, 0, 1, 'O') + countConsecutive(cell.row, cell.col, 0, -1, 'O') - 1 >= 3 ||
+                    countConsecutive(cell.row, cell.col, 1, 0, 'O') + countConsecutive(cell.row, cell.col, -1, 0, 'O') - 1 >= 3 ||
+                    countConsecutive(cell.row, cell.col, 1, 1, 'O') + countConsecutive(cell.row, cell.col, -1, -1, 'O') - 1 >= 3 ||
+                    countConsecutive(cell.row, cell.col, 1, -1, 'O') + countConsecutive(cell.row, cell.col, -1, 1, 'O') - 1 >= 3) {
+                    boardState[cell.row][cell.col] = null;
+                    console.log('AI creating 3-in-a-row:', cell);
+                    return cell;
+                }
+                boardState[cell.row][cell.col] = null;
+            }
+
+            // Priority 6: Find cells near existing pieces (strategic positions)
+            const movesWithNeighbors = [];
+            for (const cell of emptyCells) {
+                if (hasNeighbor(cell.row, cell.col)) {
+                    movesWithNeighbors.push(cell);
+                }
+            }
+
+            console.log('Strategic moves with neighbors:', movesWithNeighbors.length);
+
+            if (movesWithNeighbors.length > 0) {
+                // Choose the best strategic move
+                const bestMove = findBestStrategicMove(movesWithNeighbors);
+                console.log('AI selected strategic move:', bestMove);
+                return bestMove;
+            }
+
+            // Priority 7: Random move from all empty cells
+            const randomIndex = Math.floor(Math.random() * emptyCells.length);
+            const selectedMove = emptyCells[randomIndex];
+            console.log('AI selected random move:', selectedMove);
+            return selectedMove;
+        }
+
+        // HARD AI: Advanced strategy with look-ahead
+        if (aiDifficulty === 'hard') {
+            // Enhanced strategy for hard AI - more aggressive blocking and better move selection
+            console.log('Hard AI using advanced strategy');
+
+            // For hard AI, prioritize blocking more aggressively and look deeper
+            // The existing logic already includes sophisticated blocking and strategic moves
+            // Hard AI will use the same logic but with better move selection
+        }
+
+        // Find best strategic move
+        function findBestStrategicMove(moves) {
+            let bestMove = moves[0];
+            let bestScore = -1;
+
+            for (const move of moves) {
+                let score = 0;
+
+                // Check all 8 directions for potential
+                const directions = [
+                    [0, 1], [0, -1], [1, 0], [-1, 0], // horizontal, vertical
+                    [1, 1], [-1, -1], [1, -1], [-1, 1] // diagonal
+                ];
+
+                for (const [dRow, dCol] of directions) {
+                    // Count AI pieces in this direction
+                    let aiCount = 0;
+                    let spaceCount = 0;
+
+                    for (let i = 1; i <= 4; i++) {
+                        const r = move.row + dRow * i;
+                        const c = move.col + dCol * i;
+
+                        if (r >= 0 && r < size && c >= 0 && c < size) {
+                            if (boardState[r][c] === 'O') aiCount++;
+                            else if (boardState[r][c] === null) spaceCount++;
+                        }
+                    }
+
+                    // Count in opposite direction
+                    for (let i = 1; i <= 4; i++) {
+                        const r = move.row - dRow * i;
+                        const c = move.col - dCol * i;
+
+                        if (r >= 0 && r < size && c >= 0 && c < size) {
+                            if (boardState[r][c] === 'O') aiCount++;
+                            else if (boardState[r][c] === null) spaceCount++;
+                        }
+                    }
+
+                    // Score based on AI pieces and available space
+                    if (aiCount >= 2 && spaceCount >= 2) {
+                        score += aiCount * 10;
+                    }
+                }
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+            }
+
+            return bestMove;
+        }
+
+        // Check if cell has neighbors
+        function hasNeighbor(row, col) {
+            for (let i = Math.max(0, row - 2); i <= Math.min(size - 1, row + 2); i++) {
+                for (let j = Math.max(0, col - 2); j <= Math.min(size - 1, col + 2); j++) {
+                    if (boardState[i][j] !== null) return true;
+                }
+            }
+            return false;
+        }
+
+        // Load statistics from localStorage
+        function loadStats() {
+            try {
+                const saved = localStorage.getItem('caroStats');
+                if (saved) {
+                    gameStats = JSON.parse(saved);
+                }
+                updateStatsDisplay();
+            } catch (error) {
+                console.log('Error loading stats:', error);
+            }
+        }
+
+        // Save statistics to localStorage
+        function saveStats() {
+            try {
+                localStorage.setItem('caroStats', JSON.stringify(gameStats));
+            } catch (error) {
+                console.log('Error saving stats:', error);
+            }
+        }
+
+        // Update statistics display
+        function updateStatsDisplay() {
+            const winsElement = document.getElementById('wins');
+            const lossesElement = document.getElementById('losses');
+            const drawsElement = document.getElementById('draws');
+
+            if (winsElement) winsElement.textContent = gameStats.wins;
+            if (lossesElement) lossesElement.textContent = gameStats.losses;
+            if (drawsElement) drawsElement.textContent = gameStats.draws;
+        }
+
+        // Check for win
+        function checkWin(row, col, player) {
+            return (
+                countConsecutive(row, col, 0, 1, player) + countConsecutive(row, col, 0, -1, player) - 1 >= 5 ||
+                countConsecutive(row, col, 1, 0, player) + countConsecutive(row, col, -1, 0, player) - 1 >= 5 ||
+                countConsecutive(row, col, 1, 1, player) + countConsecutive(row, col, -1, -1, player) - 1 >= 5 ||
+                countConsecutive(row, col, 1, -1, player) + countConsecutive(row, col, -1, 1, player) - 1 >= 5
+            );
+        }
+
+        // Count consecutive pieces
+        function countConsecutive(row, col, dRow, dCol, player) {
+            let count = 0;
+            let r = row, c = col;
+            while (r >= 0 && r < size && c >= 0 && c < size && boardState[r][c] === player) {
+                count++;
+                r += dRow;
+                c += dCol;
+            }
+            return count;
+        }
+
+        // Override forceAIMove to use local functions
+        window.forceAIMove = function() {
+            console.log('Force AI move called from layout');
+            if (!gameOver) {
+                currentPlayer = 'O';
+                updateStatus();
+                makeAIMove();
+            }
+        };
+
+        // Override testAI to use local functions
+        window.testAI = function() {
+            console.log('Test AI called from layout');
+            if (currentPlayer === 'O' && !gameOver) {
+                makeAIMove();
+            } else {
+                alert('Không thể test AI - không phải lượt AI hoặc game đã kết thúc');
+            }
+        };
+
+        // Override resetGame to use local functions
+        window.resetGame = function() {
+            console.log('Reset game called from layout');
+            boardState = Array.from({ length: size }, () => Array(size).fill(null));
+            currentPlayer = 'X';
+            gameOver = false;
+
+            const cells = document.querySelectorAll('#caro-board td');
+            cells.forEach(cell => {
+                cell.innerHTML = '';
+            });
+
+            updateStatus();
+            loadStats();
+        };
+
+        // Override showGameRules
+        window.showGameRules = function() {
+            console.log('Show rules called from layout');
+            alert('Luật chơi Cờ Caro:\n\n- Người chơi đánh X (màu đỏ)\n- AI đánh O (màu xanh)\n- Đặt 5 quân cờ liên tiếp để thắng\n- Có thể đánh ngang, dọc hoặc chéo\n- Bàn cờ 20x20 ô');
+        };
+
+        // Initialize AI board (Index) when DOM is loaded and board exists
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('=== GAME INITIALIZATION START ===');
+
+            const board = document.getElementById('caro-board');
+            if (!board) {
+                console.log('ERROR: Board not found!');
+                return;
+            }
+
+            console.log('Board found, setting up game...');
+
+            // Load statistics and update status
+            loadStats();
+            updateStatus();
+
+            // Ensure fixed-size black grid styling for AI board
+            board.classList.add('caro-table');
+
+            // Add click event listener to board
+            board.addEventListener('click', function (e) {
+                console.log('Board clicked:', e.target);
+
+                if (gameOver) {
+                    console.log('Game is over, click ignored');
+                    return;
+                }
+
+                if (currentPlayer !== 'X') {
+                    console.log('Not player turn, click ignored');
+                    return;
+                }
+
+                if (e.target.tagName === 'TD' && e.target.textContent === '') {
+                    console.log('Player clicked on empty cell');
+
+                    const cell = e.target;
+                    const row = cell.parentNode.rowIndex;
+                    const col = cell.cellIndex;
+
+                    console.log('Cell position:', row, col);
+
+                    // Place player's move
+                    cell.innerHTML = '<span class="caro-x">X</span>';
+                    boardState[row][col] = 'X';
+
+                    console.log('Player placed X at:', row, col);
+
+                    // Check for win
+                    if (checkWin(row, col, 'X')) {
+                        setTimeout(() => {
+                            showVictoryModal('Bạn thắng!', 'Chúc mừng! Bạn đã đánh bại AI!', '🏆');
+                            gameStats.wins++;
+                            saveStats();
+                            updateStatsDisplay();
+                        }, 100);
+                        gameOver = true;
+                        return;
+                    }
+
+                    // Switch to AI turn
+                    currentPlayer = 'O';
+                    updateStatus();
+                    console.log('Switching to AI turn');
+
+                    // Kiểm tra hòa sau khi người chơi đánh
+                    const emptyCellsAfterPlayer = [];
+                    for (let i = 0; i < size; i++) {
+                        for (let j = 0; j < size; j++) {
+                            if (boardState[i][j] === null) {
+                                emptyCellsAfterPlayer.push({ row: i, col: j });
+                            }
+                        }
+                    }
+
+                    if (emptyCellsAfterPlayer.length === 0) {
+                        setTimeout(() => {
+                            showVictoryModal('Hòa!', 'Trận đấu kết thúc hòa!', '👋');
+                            gameStats.draws++;
+                            saveStats();
+                            updateStatsDisplay();
+                        }, 100);
+                        gameOver = true;
+                        return;
+                    }
+
+                    // Make AI move
+                    makeAIMove();
+                }
+            });
+
+            console.log('=== GAME INITIALIZATION COMPLETED ===');
+        });
+
+        console.log('=== LAYOUT SCRIPT COMPLETED ===');
+    </script>
+    <script src="~/js/site.js"></script>
+    <style>
+        /* Shared fixed-size black grid for both AI and Multiplayer boards */
+        .caro-table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: auto;
+            margin: 0 auto;
+            background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 2px 10px rgba(255,255,255,0.5);
+            position: relative;
+        }
+        
+        .caro-table::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(102,126,234,0.05), transparent);
+            animation: boardShine 8s linear infinite;
+            pointer-events: none;
+        }
+        
+        @@keyframes boardShine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .caro-table td {
+            width: 35px;
+            height: 35px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 24px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border: 2px solid rgba(102,126,234,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .caro-table td::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(102,126,234,0.3) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        }
+        
+        .caro-table td:hover::before {
+            width: 80px;
+            height: 80px;
+        }
+        
+        .caro-table td:hover {
+            background: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.1) 100%) !important;
+            transform: scale(1.1);
+            border-color: rgba(102,126,234,0.6) !important;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4), inset 0 2px 6px rgba(255,255,255,0.3);
+            z-index: 10;
+        }
+        
+        /* Animation khi click vào ô */
+        .caro-table td:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease;
+        }
+        
+        /* Animation cho quân cờ mới được đặt */
+        .caro-x, .caro-o {
+            animation: pieceDrop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        @@keyframes pieceDrop {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(10deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        /* Hiệu ứng glow cho các ô có quân cờ */
+        .caro-table td:has(.caro-x),
+        .caro-table td:has(.caro-o) {
+            box-shadow: inset 0 0 10px rgba(102,126,234,0.1);
+        }
+        
+        .nav-link:hover {
+            color: #fff !important;
+            transform: translateY(-2px);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #searchResults {
+            position: absolute;
+            width: 100%;
+            background: white;
+            border: 1px solid #f0ad4e;
+            border-radius: 10px;
+            z-index: 2000;
+        }
+
+        #searchResults li:hover {
+                background-color: #fff9e6;
+                cursor: pointer;
+        }
+
+        /* Responsive styles for caro board */
+        @@media (max-width: 1200px) {
+            .caro-table td {
+                width: 30px;
+                height: 30px;
+                font-size: 20px;
+            }
+        }
+
+        @@media (max-width: 992px) {
+            .caro-table td {
+                width: 25px;
+                height: 25px;
+                font-size: 16px;
+            }
+            
+            .caro-board-container {
+                padding: 15px;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .caro-table td {
+                width: 20px;
+                height: 20px;
+                font-size: 14px;
+                border-width: 1px;
+            }
+            
+            .caro-board-container {
+                padding: 10px;
+                max-width: 100vw;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .caro-table td {
+                width: 15px;
+                height: 15px;
+                font-size: 10px;
+                border-width: 1px;
+                padding: 2px;
+            }
+            
+            .caro-board-container {
+                padding: 5px;
+            }
+        }
+
+        @@media (max-width: 400px) {
+            .caro-table td {
+                width: 12px;
+                height: 12px;
+                font-size: 8px;
+            }
+        }
+
+        /* Ensure board container is responsive */
+        .caro-board-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-width: 100%;
+        }
+
+    </style>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,631 @@
+@{
+    ViewData["Title"] = "Chơi với AI";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Main Game Area -->
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-robot me-2"></i>Chơi với AI</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Game Controls -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Mức độ AI:</strong></label>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-primary ai-level-btn" data-level="medium" onclick="setAILevel('medium')">
+                                        <i class="fas fa-chart-line me-2"></i>Trung bình
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary ai-level-btn" data-level="hard" onclick="setAILevel('hard')">
+                                        <i class="fas fa-trophy me-2"></i>Khó
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Tùy chọn:</strong></label>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-success" onclick="resetGame()">
+                                        <i class="fas fa-redo me-2"></i>Chơi lại
+                                    </button>
+                                    <button type="button" class="btn btn-info" onclick="showGameRules()">
+                                        <i class="fas fa-question-circle me-2"></i>Luật chơi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Game Status -->
+                    <div class="alert alert-info mb-4">
+                        <div class="row text-center">
+                            <div class="col-md-6">
+                                <strong>Người chơi (X):</strong> <span id="player-status" class="badge bg-success">Đang đánh...</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>AI (O):</strong> <span id="ai-status" class="badge bg-secondary">Đang chờ...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Game Board -->
+                    <div class="text-center">
+                        <div class="caro-board-container d-inline-block">
+                            <table id="caro-board" class="caro-table">
+                                @for (int i = 0; i < 20; i++)
+                                {
+                                    <tr>
+                                        @for (int j = 0; j < 20; j++)
+                                        {
+                                            <td></td>
+                                        }
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Statistics Card -->
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Thống kê</h5>
+                </div>
+                <div class="card-body">
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-trophy text-warning me-2"></i>Thắng:</span>
+                            <strong id="wins" class="badge bg-warning text-dark">0</strong>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-times-circle text-danger me-2"></i>Thua:</span>
+                            <strong id="losses" class="badge bg-danger">0</strong>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-handshake text-info me-2"></i>Hòa:</span>
+                            <strong id="draws" class="badge bg-info">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Info Card -->
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Thông tin</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Bàn cờ 20x20 ô</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Đặt 5 quân liên tiếp để thắng</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Bạn đánh X (màu đỏ)</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>AI đánh O (màu xanh)</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Có thể đánh ngang, dọc, chéo</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Victory Modal -->
+<div id="victoryModal" class="victory-modal">
+    <div class="victory-content">
+        <span class="victory-icon" id="victoryIcon">🏆</span>
+        <div class="victory-title" id="victoryTitle">Chiến thắng!</div>
+        <div class="victory-message" id="victoryMessage">Chúc mừng bạn đã chiến thắng!</div>
+        <button class="victory-button" onclick="closeVictoryModal()">Tiếp tục</button>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toastNotification" class="toast-notification">
+    <div class="toast-content">
+        <div class="toast-icon">
+            <i id="toastIcon" class="fas fa-info-circle"></i>
+        </div>
+        <div class="toast-message" id="toastMessage">Thông báo</div>
+        <button class="toast-close" onclick="closeToastNotification()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="toast-progress"></div>
+</div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+
+    .stat-item {
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .stat-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    /* Victory Modal Styles */
+    .victory-modal {
+        display: none;
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .victory-modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .victory-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 40px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.5s ease;
+        max-width: 400px;
+        width: 90%;
+    }
+
+    .victory-icon {
+        font-size: 80px;
+        display: block;
+        margin-bottom: 20px;
+        animation: bounce 1s ease infinite;
+    }
+
+    .victory-title {
+        font-size: 32px;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 15px;
+    }
+
+    .victory-message {
+        font-size: 18px;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 30px;
+    }
+
+    .victory-button {
+        background: white;
+        color: #667eea;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .victory-button:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .card {
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        border-bottom: none;
+        padding: 20px;
+    }
+
+    .btn-group .btn {
+        border-radius: 8px;
+    }
+
+    /* Responsive styles for game board */
+    .caro-board-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-width: 100%;
+        padding: 10px;
+    }
+
+    /* Responsive adjustments for different screen sizes */
+    @@media (max-width: 1200px) {
+        .caro-table td {
+            width: 30px;
+            height: 30px;
+            font-size: 20px;
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .caro-table td {
+            width: 25px;
+            height: 25px;
+            font-size: 16px;
+        }
+        
+        .caro-board-container {
+            padding: 5px;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .caro-table td {
+            width: 20px;
+            height: 20px;
+            font-size: 14px;
+            border-width: 1px;
+        }
+        
+        .caro-board-container {
+            padding: 5px;
+            max-width: 100vw;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .btn-group {
+            flex-direction: column;
+        }
+        
+        .btn-group .btn {
+            border-radius: 4px !important;
+            margin-bottom: 5px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .caro-table td {
+            width: 15px;
+            height: 15px;
+            font-size: 10px;
+            border-width: 1px;
+            padding: 2px;
+        }
+        
+        .caro-board-container {
+            padding: 3px;
+        }
+        
+        .container {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .card-header h3 {
+            font-size: 1.2rem;
+        }
+        
+        .card-header h5 {
+            font-size: 1rem;
+        }
+        
+        .victory-content {
+            padding: 20px;
+            max-width: 90%;
+        }
+        
+        .victory-icon {
+            font-size: 50px;
+        }
+        
+        .victory-title {
+            font-size: 24px;
+        }
+        
+        .victory-message {
+            font-size: 14px;
+        }
+    }
+
+    @@media (max-width: 400px) {
+        .caro-table td {
+            width: 12px;
+            height: 12px;
+            font-size: 8px;
+        }
+    }
+
+    /* Ensure board container doesn't break layout */
+    .caro-board-container {
+        display: inline-block;
+        width: auto;
+        max-width: 100%;
+    }
+
+    /* Prevent horizontal scroll on body when board is visible */
+    body {
+        overflow-x: hidden;
+    }
+
+    /* Additional mobile optimizations */
+    @@media (max-width: 768px) {
+        .row {
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        .col-lg-8, .col-lg-4 {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .mt-4 {
+            margin-top: 1rem !important;
+        }
+        
+        .mb-4 {
+            margin-bottom: 1rem !important;
+        }
+    }
+
+    /* Ensure buttons are touch-friendly on mobile */
+    @@media (max-width: 576px) {
+        .btn {
+            min-height: 44px;
+            padding: 10px 15px;
+        }
+        
+        .caro-table td {
+            min-width: 12px;
+            min-height: 12px;
+        }
+    }
+
+    /* Toast Notification Styles */
+    .toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 2147483647; /* ensure always on top */
+        pointer-events: auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        min-width: 320px;
+        max-width: 400px;
+        transform: translateX(450px);
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        overflow: hidden;
+    }
+
+    .toast-notification.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    .toast-content {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        gap: 12px;
+    }
+
+    .toast-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .toast-icon .fa-info-circle {
+        color: #3b82f6;
+        background: rgba(59, 130, 246, 0.1);
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toast-icon .fa-trophy {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, 0.1);
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toast-icon .fa-chart-line {
+        color: #10b981;
+        background: rgba(16, 185, 129, 0.1);
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toast-message {
+        flex: 1;
+        font-size: 15px;
+        font-weight: 500;
+        color: #1f2937;
+        line-height: 1.5;
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: #9ca3af;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toast-close:hover {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .toast-progress {
+        height: 4px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        width: 100%;
+        animation: toastProgress 4s linear forwards;
+    }
+
+    @@keyframes toastProgress {
+        from {
+            width: 100%;
+        }
+        to {
+            width: 0%;
+        }
+    }
+
+    /* Mobile responsive for toast */
+    @@media (max-width: 576px) {
+        .toast-notification {
+            top: 10px;
+            right: 10px;
+            left: 10px;
+            min-width: auto;
+            max-width: none;
+            transform: translateY(-100px);
+        }
+
+        .toast-notification.show {
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<script>
+    // Toast notification functions
+    function ensureToastOnBody() {
+        const toast = document.getElementById('toastNotification');
+        if (toast && toast.parentElement !== document.body) {
+            document.body.appendChild(toast);
+        }
+        // Position below navbar if present
+        const nav = document.querySelector('.navbar');
+        if (toast) {
+            const baseTop = 10;
+            const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 0;
+            toast.style.top = (navHeight + baseTop) + 'px';
+            toast.style.right = '20px';
+        }
+    }
+
+    function showToastNotification(message, iconClass = 'fa-info-circle') {
+        const toast = document.getElementById('toastNotification');
+        const toastMessage = document.getElementById('toastMessage');
+        const toastIcon = document.getElementById('toastIcon');
+        
+        if (!toast || !toastMessage || !toastIcon) return;
+        
+        // Ensure on top-level and positioned correctly
+        ensureToastOnBody();
+        
+        toastMessage.textContent = message;
+        toastIcon.className = 'fas ' + iconClass;
+        
+        // Reset animation
+        const progress = toast.querySelector('.toast-progress');
+        if (progress) {
+            progress.style.animation = 'none';
+            setTimeout(() => {
+                progress.style.animation = 'toastProgress 4s linear forwards';
+            }, 10);
+        }
+        
+        toast.classList.add('show');
+        
+        // Auto close after 4 seconds
+        setTimeout(() => {
+            closeToastNotification();
+        }, 4000);
+    }
+
+    function closeToastNotification() {
+        const toast = document.getElementById('toastNotification');
+        if (toast) {
+            toast.classList.remove('show');
+        }
+    }
+
+    // Reposition on window resize to keep below navbar
+    window.addEventListener('resize', ensureToastOnBody);
+
+    // Override setAILevel to use toast instead of alert
+    const originalSetAILevel = window.setAILevel;
+    if (originalSetAILevel) {
+        window.setAILevel = function(level) {
+            originalSetAILevel(level);
+            const levelName = level === 'medium' ? 'Trung bình' : 'Khó';
+            const iconClass = level === 'medium' ? 'fa-chart-line' : 'fa-trophy';
+            showToastNotification(`AI đã chuyển sang mức độ: ${levelName}`, iconClass);
+        };
+    }
+
+    // Ensure placement on initial load
+    document.addEventListener('DOMContentLoaded', ensureToastOnBody);
+</script>
+

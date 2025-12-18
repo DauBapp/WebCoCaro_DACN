@@ -1,0 +1,68 @@
+﻿@model Web_chơi_cờ_Caro.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="login-form">
+                <div class="text-center mb-4">
+                    <div class="login-icon mb-3">
+                        <i class="fas fa-user-circle fa-4x" style="color: #667eea; animation: iconFloat 3s ease-in-out infinite;"></i>
+                    </div>
+                    <h2 class="fw-bold" style="color: #333; margin-bottom: 10px;">Chào mừng trở lại!</h2>
+                    <p class="text-muted">Đăng nhập để tiếp tục chơi cờ caro</p>
+                </div>
+
+                <form asp-action="Login" method="post">
+                    @* <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div> *@
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-envelope me-2" style="color: #667eea;"></i>Email
+                        </label>
+                        <input name="email" type="email" class="form-control" placeholder="Nhập email của bạn" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-lock me-2" style="color: #667eea;"></i>Mật khẩu
+                        </label>
+                        <input name="password" type="password" class="form-control" placeholder="Nhập mật khẩu" />
+                    </div>
+
+                    <div class="mb-4 form-check">
+                        <input type="checkbox" name="rememberMe" class="form-check-input" id="rememberMeLogin" />
+                        <label class="form-check-label" for="rememberMeLogin">Ghi nhớ đăng nhập</label>
+                    </div>
+
+                    <button type="submit" class="btn w-100 fw-bold mb-3">
+                        <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                    </button>
+                    
+                    <div class="text-center">
+                        <p class="mb-0">Chưa có tài khoản? <a href="/Account/Register" style="color: #667eea; text-decoration: none; font-weight: 600;">Đăng ký ngay</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes iconFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .login-icon {
+        animation: fadeInDown 0.8s ease-out;
+    }
+</style>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

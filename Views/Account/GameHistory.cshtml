@@ -1,0 +1,676 @@
+@model Web_chơi_cờ_Caro.Controllers.GameHistoryViewModel
+
+@{
+    ViewData["Title"] = "Lịch sử đấu";
+}
+
+<style>
+    /* Backdrop tùy chỉnh - tối nhẹ, không chặn tương tác */
+    .custom-modal-backdrop {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background-color: rgba(0, 0, 0, 0.4) !important; /* Tối nhẹ - 40% */
+        z-index: 1040 !important;
+        pointer-events: none !important; /* KHÔNG chặn tương tác - chỉ là lớp nền */
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Đảm bảo modal có z-index cao hơn backdrop và hiển thị đúng */
+    #gameDetailsModal {
+        z-index: 1055 !important;
+        position: fixed !important;
+    }
+    
+    #gameDetailsModal.show {
+        z-index: 1055 !important;
+        position: fixed !important;
+        display: block !important;
+    }
+    
+    /* Modal dialog và content - sáng và nổi bật */
+    #gameDetailsModal .modal-dialog {
+        pointer-events: auto !important;
+        position: relative !important;
+        z-index: 1056 !important;
+        margin: 1.75rem auto !important;
+    }
+    
+    /* Modal content - background trắng sáng RÕ RÀNG, có shadow để nổi bật */
+    #gameDetailsModal .modal-content {
+        pointer-events: auto !important;
+        position: relative !important;
+        z-index: 1057 !important;
+        background-color: #ffffff !important;
+        background-clip: padding-box !important;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 0.375rem !important;
+        opacity: 1 !important;
+        margin-top: 100px;
+    }
+    
+    /* Modal body cũng đảm bảo sáng */
+    #gameDetailsModal .modal-body {
+        background-color: #ffffff !important;
+        color: #212529 !important;
+    }
+    
+    /* Modal header sáng */
+    #gameDetailsModal .modal-header {
+        background-color: #ffffff !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        border-top-left-radius: 0.375rem !important;
+        border-top-right-radius: 0.375rem !important;
+    }
+    
+    /* Modal footer sáng */
+    #gameDetailsModal .modal-footer {
+        background-color: #ffffff !important;
+        border-top: 1px solid #dee2e6 !important;
+        border-bottom-left-radius: 0.375rem !important;
+        border-bottom-right-radius: 0.375rem !important;
+    }
+    
+    /* Đảm bảo modal title sáng */
+    #gameDetailsModal .modal-title {
+        color: #212529 !important;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Lịch sử đấu của tôi
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (Model.GameHistories == null || !Model.GameHistories.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Bạn chưa có lịch sử đấu nào.</p>
+                            <a href="@Url.Action("Multiplayer", "Home")" class="btn btn-primary">
+                                <i class="fas fa-gamepad me-2"></i>Bắt đầu chơi ngay
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <p class="text-muted mb-0">
+                                Hiển thị <strong>@((Model.CurrentPage - 1) * Model.PageSize + 1)</strong> - 
+                                <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalGames))</strong> 
+                                trong tổng số <strong>@Model.TotalGames</strong> trận đấu gần nhất (tối đa 25 trận)
+                            </p>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Trận #</th>
+                                        <th>Phòng</th>
+                                        <th>Người chơi X</th>
+                                        <th>Người chơi O</th>
+                                        <th>Thời gian bắt đầu</th>
+                                        <th>Thời gian kết thúc</th>
+                                        <th>Người thắng</th>
+                                        <th>Số nước đi</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var game in Model.GameHistories)
+                                    {
+                                        <tr>
+                                            <td><strong>#@game.Id</strong></td>
+                                            <td>@game.RoomId</td>
+                                            <td>
+                                                <span class="badge bg-danger">@game.PlayerXName</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@game.PlayerOName</span>
+                                            </td>
+                                            <td>@game.StartedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                            <td>@(game.EndedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</td>
+                                            <td>
+                                                @if (string.IsNullOrEmpty(game.Winner))
+                                                {
+                                                    <span class="badge bg-secondary">Chưa kết thúc</span>
+                                                }
+                                                else if (game.Winner == "Draw")
+                                                {
+                                                    <span class="badge bg-warning">Hòa</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success">@game.Winner</span>
+                                                }
+                                            </td>
+                                            <td>@game.MoveCount</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="showGameDetails(@game.Id)">
+                                                    <i class="fas fa-eye me-1"></i>Xem chi tiết
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        @* Pagination Controls *@
+                        @if (Model.TotalPages > 1)
+                        {
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center">
+                                    @* Previous Button *@
+                                    <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("GameHistory", new { page = Model.CurrentPage - 1 })" aria-label="Trước">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    
+                                    @* Page Numbers *@
+                                    @for (int i = 1; i <= Model.TotalPages; i++)
+                                    {
+                                        if (i == Model.CurrentPage)
+                                        {
+                                            <li class="page-item active">
+                                                <span class="page-link">@i</span>
+                                            </li>
+                                        }
+                                        else if (i == 1 || i == Model.TotalPages || (i >= Model.CurrentPage - 1 && i <= Model.CurrentPage + 1))
+                                        {
+                                            <li class="page-item">
+                                                <a class="page-link" href="@Url.Action("GameHistory", new { page = i })">@i</a>
+                                            </li>
+                                        }
+                                        else if (i == Model.CurrentPage - 2 || i == Model.CurrentPage + 2)
+                                        {
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        }
+                                    }
+                                    
+                                    @* Next Button *@
+                                    <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="@Url.Action("GameHistory", new { page = Model.CurrentPage + 1 })" aria-label="Sau">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal hiển thị chi tiết trận đấu -->
+    <div class="modal fade" id="gameDetailsModal" tabindex="-1" aria-labelledby="gameDetailsModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gameDetailsModalLabel">
+                        <i class="fas fa-chess-board me-2"></i>Chi tiết trận đấu
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Danh sách nước đi</h6>
+                            <div id="moveList" style="max-height: 400px; overflow-y: auto;" class="border rounded p-3">
+                                <div class="text-muted small">Đang tải...</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Bàn cờ</h6>
+                            <div class="text-center">
+                                <canvas id="replayBoard" width="400" height="400" style="border: 1px solid #ccc; background: #fff; max-width: 100%;"></canvas>
+                            </div>
+                            <div id="stepSelector" class="mt-3 text-center"></div>
+                            <div id="replayControls" class="mt-3 text-center"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="forceCloseModal()">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const boardSize = 20;
+        const cellSize = 400 / boardSize;
+        let replayMoves = [];
+        let replayStep = 0;
+        let currentGameId = null;
+        let isPlaying = false;
+        let replayInterval = null;
+        let replaySpeed = 800; // milliseconds giữa mỗi nước đi
+
+        // Hàm cleanup backdrop - đảm bảo không còn backdrop nào chặn trang
+        function cleanupModalBackdrop() {
+            const backdrops = document.querySelectorAll('.modal-backdrop, .custom-modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+
+        // Tạo backdrop tùy chỉnh - chỉ là lớp nền, không chặn tương tác
+        function createCustomBackdrop() {
+            cleanupModalBackdrop(); // Xóa backdrop cũ nếu có
+            
+            const backdrop = document.createElement('div');
+            backdrop.className = 'custom-modal-backdrop';
+            backdrop.id = 'customModalBackdrop';
+            
+            // Đảm bảo backdrop hiển thị với màu tối - phải dùng fixed để che toàn màn hình
+            backdrop.style.position = 'fixed';
+            backdrop.style.top = '0';
+            backdrop.style.left = '0';
+            backdrop.style.width = '100vw';
+            backdrop.style.height = '100vh';
+            backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.4)'; // Tối nhẹ - 40% đen
+            backdrop.style.zIndex = '1040';
+            backdrop.style.pointerEvents = 'none';
+            backdrop.style.display = 'block';
+            backdrop.style.visibility = 'visible';
+            backdrop.style.opacity = '1';
+            backdrop.style.margin = '0';
+            backdrop.style.padding = '0';
+            
+            // Append backdrop vào body, đảm bảo nó nằm trước modal trong DOM
+            // Nếu modal đã tồn tại, insert backdrop trước modal
+            const modalElement = document.getElementById('gameDetailsModal');
+            if (modalElement && modalElement.parentNode) {
+                modalElement.parentNode.insertBefore(backdrop, modalElement);
+            } else {
+                document.body.appendChild(backdrop);
+            }
+            
+            // Thêm event listener vào modal element để đóng khi click vào backdrop
+            if (modalElement) {
+                // Xóa listener cũ nếu có
+                modalElement.removeEventListener('click', handleModalBackdropClick);
+                // Thêm listener mới
+                modalElement.addEventListener('click', handleModalBackdropClick);
+            }
+        }
+        
+        // Xử lý click vào backdrop (vùng ngoài modal content)
+        function handleModalBackdropClick(e) {
+            const modalElement = document.getElementById('gameDetailsModal');
+            if (!modalElement) return;
+            
+            // Nếu click vào modal element (không phải modal-content), đóng modal
+            if (e.target === modalElement) {
+                forceCloseModal();
+            }
+        }
+
+        // Hàm force close modal - đóng modal và cleanup backdrop
+        function forceCloseModal() {
+            const modalElement = document.getElementById('gameDetailsModal');
+            if (modalElement) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                // Force hide modal
+                modalElement.classList.remove('show');
+                modalElement.setAttribute('aria-hidden', 'true');
+                modalElement.style.display = 'none';
+            }
+            cleanupModalBackdrop();
+        }
+
+        function showGameDetails(gameId) {
+            try {
+                currentGameId = gameId;
+                replayMoves = [];
+                replayStep = 0;
+
+                // Reset nội dung modal
+                const moveList = document.getElementById('moveList');
+                const stepSelector = document.getElementById('stepSelector');
+                const replayControls = document.getElementById('replayControls');
+                if (moveList) moveList.innerHTML = '<div class="text-muted small">Đang tải...</div>';
+                if (stepSelector) stepSelector.innerHTML = '';
+                if (replayControls) replayControls.innerHTML = '';
+                
+                // Dừng replay nếu đang phát
+                pauseReplay();
+
+                // Hiển thị modal
+                const modalElement = document.getElementById('gameDetailsModal');
+                if (!modalElement) {
+                    console.error('Modal element not found');
+                    return;
+                }
+
+                // Cleanup backdrop cũ nếu có
+                cleanupModalBackdrop();
+
+                // Lấy hoặc tạo modal instance - không dùng backdrop của Bootstrap
+                let modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (!modalInstance) {
+                    modalInstance = new bootstrap.Modal(modalElement, {
+                        backdrop: false, // Không dùng backdrop của Bootstrap
+                        keyboard: true,
+                        focus: true
+                    });
+                }
+
+                // Hiển thị modal
+                modalInstance.show();
+
+                // Tạo backdrop và load dữ liệu sau khi modal hiển thị
+                modalElement.addEventListener('shown.bs.modal', function() {
+                    // Tạo backdrop trước
+                    createCustomBackdrop();
+                    
+                    // Đảm bảo modal có z-index cao và hiển thị đúng
+                    modalElement.style.zIndex = '1055';
+                    modalElement.style.position = 'fixed';
+                    modalElement.style.display = 'block';
+                    
+                    // Đảm bảo modal content có background trắng sáng
+                    const modalContent = modalElement.querySelector('.modal-content');
+                    if (modalContent) {
+                        modalContent.style.backgroundColor = '#ffffff';
+                        modalContent.style.opacity = '1';
+                        modalContent.style.zIndex = '1057';
+                    }
+                    
+                    const modalDialog = modalElement.querySelector('.modal-dialog');
+                    if (modalDialog) {
+                        modalDialog.style.zIndex = '1056';
+                    }
+                    
+                    loadGameMoves(gameId);
+                }, { once: true });
+            } catch (error) {
+                console.error('Error showing game details:', error);
+                alert('Có lỗi xảy ra khi mở chi tiết trận đấu: ' + error.message);
+            }
+        }
+
+        async function loadGameMoves(gameId) {
+            try {
+                const response = await fetch(`/Account/GetGameMoves?gameId=${gameId}`);
+                if (!response.ok) {
+                    throw new Error('Không thể tải dữ liệu nước đi');
+                }
+
+                const moves = await response.json();
+                replayMoves = moves || [];
+                replayStep = replayMoves.length;
+
+                // Hiển thị danh sách nước đi
+                const moveList = document.getElementById('moveList');
+                if (!moveList) {
+                    console.error('moveList element not found');
+                    return;
+                }
+
+                if (replayMoves.length === 0) {
+                    moveList.innerHTML = '<div class="text-muted small">Không có nước đi nào.</div>';
+                } else {
+                    let html = '';
+                    moves.forEach((move, index) => {
+                        // Xử lý date an toàn
+                        let timeStr = '';
+                        try {
+                            if (move.moveTime) {
+                                const moveDate = typeof move.moveTime === 'string' 
+                                    ? new Date(move.moveTime) 
+                                    : new Date(move.moveTime);
+                                timeStr = moveDate.toLocaleTimeString('vi-VN');
+                            }
+                        } catch (e) {
+                            timeStr = '';
+                        }
+
+                        html += `
+                            <div class="border-bottom py-2 small">
+                                <strong>Nước ${index + 1}:</strong> 
+                                <span class="badge ${move.playerSymbol === 'X' ? 'bg-danger' : 'bg-primary'}">${move.playerSymbol}</span>
+                                → (${move.row}, ${move.col})
+                                ${timeStr ? `<small class="text-muted">${timeStr}</small>` : ''}
+                            </div>
+                        `;
+                    });
+                    moveList.innerHTML = html;
+                }
+
+                // Vẽ bàn cờ
+                drawBoard();
+                renderStepButtons();
+                renderReplayControls();
+            } catch (error) {
+                console.error('Error loading moves:', error);
+                const moveList = document.getElementById('moveList');
+                if (moveList) {
+                    moveList.innerHTML = '<div class="text-danger small">Lỗi khi tải dữ liệu: ' + error.message + '</div>';
+                }
+            }
+        }
+
+        function drawBoard() {
+            const canvas = document.getElementById('replayBoard');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            // Xóa toàn bộ
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Vẽ lưới
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= boardSize; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, boardSize * cellSize);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(boardSize * cellSize, i * cellSize);
+                ctx.stroke();
+            }
+
+            // Vẽ các nước đi hiện tại
+            for (let i = 0; i < replayStep && i < replayMoves.length; i++) {
+                drawMove(replayMoves[i]);
+            }
+        }
+
+        function drawMove(move) {
+            const canvas = document.getElementById('replayBoard');
+            const ctx = canvas.getContext('2d');
+            const x = move.col * cellSize + cellSize / 2;
+            const y = move.row * cellSize + cellSize / 2;
+
+            ctx.fillStyle = move.playerSymbol === 'X' ? '#d9534f' : '#0275d8';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(move.playerSymbol, x, y);
+        }
+
+        function renderStepButtons() {
+            const container = document.getElementById('stepSelector');
+            if (!container) return;
+
+            container.innerHTML = '';
+            if (replayMoves.length === 0) {
+                container.innerHTML = '<div class="text-muted small">Không có nước đi nào.</div>';
+                return;
+            }
+
+            let html = '<div class="btn-group" role="group">';
+            html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToStep(0)" ' + (isPlaying ? 'disabled' : '') + '>Bắt đầu</button>';
+            html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToStep(Math.max(0, replayStep - 1))" ' + (isPlaying ? 'disabled' : '') + '>← Trước</button>';
+            
+            // Hiển thị một số nút số bước (giới hạn để không quá dài)
+            const maxButtons = 10;
+            const startStep = Math.max(1, replayStep - Math.floor(maxButtons / 2));
+            const endStep = Math.min(replayMoves.length, startStep + maxButtons);
+            
+            for (let i = startStep; i <= endStep; i++) {
+                html += `<button class="btn btn-sm ${i === replayStep ? 'btn-primary' : 'btn-outline-secondary'}" 
+                        onclick="goToStep(${i})" ${isPlaying ? 'disabled' : ''}>${i}</button>`;
+            }
+            
+            html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToStep(Math.min(replayMoves.length, replayStep + 1))" ' + (isPlaying ? 'disabled' : '') + '>Sau →</button>';
+            html += `<button class="btn btn-sm btn-outline-secondary" onclick="goToStep(${replayMoves.length})" ${isPlaying ? 'disabled' : ''}>Kết thúc</button>`;
+            html += '</div>';
+            html += `<div class="mt-2"><small class="text-muted">Bước ${replayStep} / ${replayMoves.length}</small></div>`;
+            
+            container.innerHTML = html;
+        }
+
+        function goToStep(step) {
+            // Dừng replay nếu đang phát
+            if (isPlaying) {
+                pauseReplay();
+            }
+            replayStep = Math.max(0, Math.min(step, replayMoves.length));
+            drawBoard();
+            renderStepButtons();
+            renderReplayControls();
+        }
+
+        // Hàm render các nút điều khiển replay
+        function renderReplayControls() {
+            const container = document.getElementById('replayControls');
+            if (!container || replayMoves.length === 0) {
+                if (container) container.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="btn-group" role="group">';
+            
+            // Nút Xem lại (reset về đầu)
+            html += `<button class="btn btn-sm btn-outline-info" onclick="resetReplay()" title="Xem lại từ đầu">
+                        <i class="fas fa-redo"></i> Xem lại
+                     </button>`;
+            
+            // Nút Phát/Dừng
+            if (isPlaying) {
+                html += `<button class="btn btn-sm btn-warning" onclick="pauseReplay()" title="Dừng">
+                            <i class="fas fa-pause"></i> Dừng
+                         </button>`;
+            } else {
+                const isFinished = replayStep >= replayMoves.length;
+                html += `<button class="btn btn-sm btn-success" onclick="startReplay()" title="Phát" ${isFinished ? 'disabled' : ''}>
+                            <i class="fas fa-play"></i> Phát
+                         </button>`;
+            }
+            
+            html += '</div>';
+            html += `<div class="mt-2"><small class="text-muted">Tốc độ: ${replaySpeed}ms/nước</small></div>`;
+            
+            container.innerHTML = html;
+        }
+
+        // Hàm bắt đầu phát lại trận đấu
+        function startReplay() {
+            if (isPlaying) return;
+            
+            // Nếu đã đến cuối, reset về đầu
+            if (replayStep >= replayMoves.length) {
+                replayStep = 0;
+                drawBoard();
+            }
+            
+            isPlaying = true;
+            renderReplayControls();
+            
+            replayInterval = setInterval(() => {
+                replayStep++;
+                
+                if (replayStep > replayMoves.length) {
+                    // Đã phát xong
+                    pauseReplay();
+                    replayStep = replayMoves.length; // Giữ ở bước cuối
+                } else {
+                    drawBoard();
+                    renderStepButtons();
+                    renderReplayControls();
+                }
+            }, replaySpeed);
+        }
+
+        // Hàm dừng phát lại
+        function pauseReplay() {
+            if (!isPlaying) return;
+            
+            isPlaying = false;
+            if (replayInterval) {
+                clearInterval(replayInterval);
+                replayInterval = null;
+            }
+            renderReplayControls();
+        }
+
+        // Hàm reset về đầu để xem lại
+        function resetReplay() {
+            pauseReplay();
+            replayStep = 0;
+            drawBoard();
+            renderStepButtons();
+            renderReplayControls();
+        }
+
+        // Khởi tạo khi trang load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cleanup backdrop cũ nếu có (tránh trường hợp backdrop còn sót lại từ lần trước)
+            cleanupModalBackdrop();
+            
+            const modalElement = document.getElementById('gameDetailsModal');
+            if (modalElement) {
+                // Reset dữ liệu và cleanup backdrop khi modal đóng
+                modalElement.addEventListener('hidden.bs.modal', function() {
+                    // Dừng replay nếu đang phát
+                    pauseReplay();
+                    
+                    replayMoves = [];
+                    replayStep = 0;
+                    currentGameId = null;
+                    isPlaying = false;
+                    
+                    // Cleanup backdrop ngay lập tức
+                    cleanupModalBackdrop();
+                    
+                    // Kiểm tra lại sau một chút để đảm bảo
+                    setTimeout(() => {
+                        cleanupModalBackdrop();
+                    }, 100);
+                });
+
+                // Vẽ lại bàn cờ khi modal hiển thị
+                modalElement.addEventListener('shown.bs.modal', function() {
+                    drawBoard();
+                });
+            }
+        });
+    </script>
+}
+

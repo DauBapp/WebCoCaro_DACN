@@ -1,0 +1,489 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<Web_chơi_cờ_Caro.Data.ApplicationUser> SignInManager
+@inject UserManager<Web_chơi_cờ_Caro.Data.ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@if (SignInManager.IsSignedIn(User))
+{
+    var currentUser = await UserManager.GetUserAsync(User);
+    
+    <div class="container mt-5">
+        <!-- Welcome Section -->
+        <div class="welcome-section text-center mb-5">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-chess-board me-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                Chào mừng, <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">@(currentUser?.DisplayName ?? currentUser?.UserName ?? User.Identity?.Name)</span>!
+            </h1>
+            <p class="lead text-muted">Chọn chế độ chơi để bắt đầu</p>
+        </div>
+
+        <!-- Game Modes Section -->
+        <div class="row g-4 mb-5">
+            <!-- Chơi với AI -->
+            <div class="col-lg-6">
+                <div class="game-mode-card h-100">
+                    <div class="mode-icon mb-4">
+                        <i class="fas fa-robot fa-4x" style="color: #667eea;"></i>
+                    </div>
+                    <h3 class="mb-3">Chơi với AI</h3>
+                    <p class="text-muted mb-4">
+                        Đối đầu với trí tuệ nhân tạo thông minh. Nhiều cấp độ từ trung bình đến khó, phù hợp với mọi trình độ.
+                    </p>
+                    <ul class="list-unstyled mb-4 text-start">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>AI thông minh với nhiều cấp độ</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Luyện tập kỹ năng mọi lúc</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Theo dõi thống kê cá nhân</li>
+                    </ul>
+                    <a href="@Url.Action("PlayAI", "Home")" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-play me-2"></i>Chơi với AI
+                    </a>
+                </div>
+            </div>
+
+            <!-- Chơi Online -->
+            <div class="col-lg-6">
+                <div class="game-mode-card h-100">
+                    <div class="mode-icon mb-4">
+                        <i class="fas fa-users fa-4x" style="color: #28a745;"></i>
+                    </div>
+                    <h3 class="mb-3">Chơi Online</h3>
+                    <p class="text-muted mb-4">
+                        Thách đấu bạn bè và người chơi khác trên toàn thế giới. Tạo phòng riêng hoặc tham gia phòng công khai.
+                    </p>
+                    <ul class="list-unstyled mb-4 text-start">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Chơi với người thật</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Tạo hoặc tham gia phòng</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Chat real-time trong game</li>
+                    </ul>
+                    <a href="@Url.Action("Multiplayer", "Home")" class="btn btn-success btn-lg w-100">
+                        <i class="fas fa-globe me-2"></i>Chơi Online
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Management Section -->
+        <div class="account-section">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-cog me-2"></i>Quản lý tài khoản</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Profile Info -->
+                        <div class="col-md-6 mb-4">
+                            <h5 class="mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>Thông tin tài khoản</h5>
+                            <div class="profile-info">
+                                <div class="info-item mb-3">
+                                    <strong><i class="fas fa-user me-2"></i>Tên hiển thị:</strong>
+                                    <span class="ms-2">@(currentUser?.DisplayName ?? currentUser?.UserName ?? User.Identity?.Name)</span>
+                                </div>
+                                <div class="info-item mb-3">
+                                    <strong><i class="fas fa-envelope me-2"></i>Email:</strong>
+                                    <span class="ms-2">@currentUser?.Email</span>
+                                </div>
+                                <div class="info-item mb-3">
+                                    <strong><i class="fas fa-calendar me-2"></i>Ngày tạo:</strong>
+                                    <span class="ms-2">@currentUser?.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                @if (currentUser?.LastLoginTime != null)
+                                {
+                                    <div class="info-item mb-3">
+                                        <strong><i class="fas fa-clock me-2"></i>Đăng nhập lần cuối:</strong>
+                                        <span class="ms-2">@currentUser.LastLoginTime.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Account Actions -->
+                        <div class="col-md-6 mb-4">
+                            <h5 class="mb-3"><i class="fas fa-cog me-2 text-primary"></i>Tùy chọn</h5>
+                            <div class="d-grid gap-2">
+                                <a href="@Url.Action("Profile", "Account")" class="btn btn-outline-primary">
+                                    <i class="fas fa-user-edit me-2"></i>Chỉnh sửa thông tin
+                                </a>
+                                <a href="@Url.Action("ChangePassword", "Account")" class="btn btn-outline-primary">
+                                    <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                                </a>
+                                <a href="@Url.Action("GameHistory", "Account")" class="btn btn-outline-primary">
+                                    <i class="fas fa-history me-2"></i>Lịch sử chơi
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Hero Section -->
+    <div class="hero-section text-center py-5">
+        <div class="hero-icon mb-4">
+            <i class="fas fa-chess-board fa-5x" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+        </div>
+        <h1 class="hero-title mb-3">Chào mừng đến với <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Web Cờ Caro</span></h1>
+        <p class="hero-subtitle mb-4">Trải nghiệm game cờ caro trực tuyến với nhiều chế độ chơi thú vị</p>
+        <div class="hero-buttons">
+            <a href="/Account/Login" class="btn btn-primary btn-lg me-3">
+                <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+            </a>
+            <a href="/Account/Register" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-user-plus me-2"></i>Đăng ký
+            </a>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features-section py-5">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-users fa-3x" style="color: #28a745;"></i>
+                    </div>
+                    <h4>Chơi với Người</h4>
+                    <p>Thách đấu bạn bè và người chơi khác trên toàn thế giới. Tạo phòng riêng hoặc tham gia phòng công khai.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-robot fa-3x" style="color: #007bff;"></i>
+                    </div>
+                    <h4>Chơi với AI</h4>
+                    <p>Đối đầu với trí tuệ nhân tạo thông minh. Nhiều cấp độ từ dễ đến khó, phù hợp với mọi trình độ.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card text-center p-4 h-100">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-trophy fa-3x" style="color: #ffc107;"></i>
+                    </div>
+                    <h4>Bảng Xếp Hạng</h4>
+                    <p>Tham gia cạnh tranh và xem thứ hạng của mình. Theo dõi tiến độ và thành tích qua thời gian.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Modes Section -->
+    <div class="game-modes-section py-5">
+        <h2 class="text-center mb-5">Các Chế Độ Chơi</h2>
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="mode-card d-flex align-items-center p-4">
+                    <div class="mode-icon me-4">
+                        <i class="fas fa-user-friends fa-2x" style="color: #28a745;"></i>
+                    </div>
+                    <div class="mode-content">
+                        <h4>Chế Độ 2 Người</h4>
+                        <p>Chơi cùng bạn bè trên cùng một thiết bị. Luân phiên đặt quân cờ và tận hưởng trò chơi truyền thống.</p>
+                        <span class="badge bg-success">Có sẵn</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="mode-card d-flex align-items-center p-4">
+                    <div class="mode-icon me-4">
+                        <i class="fas fa-globe fa-2x" style="color: #007bff;"></i>
+                    </div>
+                    <div class="mode-content">
+                        <h4>Chơi Trực Tuyến</h4>
+                        <p>Kết nối với người chơi khác qua internet. Tạo phòng riêng hoặc tham gia phòng công khai.</p>
+                        <span class="badge bg-primary">Sắp ra mắt</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="mode-card d-flex align-items-center p-4">
+                    <div class="mode-icon me-4">
+                        <i class="fas fa-brain fa-2x" style="color: #6f42c1;"></i>
+                    </div>
+                    <div class="mode-content">
+                        <h4>Chế Độ AI</h4>
+                        <p>Đối đầu với AI thông minh với 3 cấp độ: Dễ, Trung bình, Khó. Rèn luyện kỹ năng và chiến thuật.</p>
+                        <span class="badge bg-success">Có sẵn</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="mode-card d-flex align-items-center p-4">
+                    <div class="mode-icon me-4">
+                        <i class="fas fa-clock fa-2x" style="color: #fd7e14;"></i>
+                    </div>
+                    <div class="mode-content">
+                        <h4>Chế Độ Giới Hạn Thời Gian</h4>
+                        <p>Thêm thử thách với giới hạn thời gian cho mỗi lượt đi. Tăng tốc độ tư duy và quyết định.</p>
+                        <span class="badge bg-warning">Sắp ra mắt</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Why Choose Us Section -->
+    <div class="why-choose-section py-5">
+        <h2 class="text-center mb-5">Tại Sao Chọn Web Cờ Caro?</h2>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="benefit-item text-center">
+                    <i class="fas fa-mobile-alt fa-2x mb-3" style="color: #28a745;"></i>
+                    <h5>Responsive Design</h5>
+                    <p>Chơi mượt mà trên mọi thiết bị</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="benefit-item text-center">
+                    <i class="fas fa-shield-alt fa-2x mb-3" style="color: #007bff;"></i>
+                    <h5>Bảo Mật Cao</h5>
+                    <p>Thông tin cá nhân được bảo vệ</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="benefit-item text-center">
+                    <i class="fas fa-bolt fa-2x mb-3" style="color: #ffc107;"></i>
+                    <h5>Tốc Độ Nhanh</h5>
+                    <p>Phản hồi nhanh, không lag</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="benefit-item text-center">
+                    <i class="fas fa-heart fa-2x mb-3" style="color: #dc3545;"></i>
+                    <h5>Miễn Phí</h5>
+                    <p>Hoàn toàn miễn phí, không quảng cáo</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="cta-section text-center py-5">
+        <h3 class="mb-3">Sẵn sàng tham gia?</h3>
+        <p class="mb-4">Đăng ký ngay để bắt đầu hành trình chinh phục cờ caro!</p>
+        <a href="/Account/Register" class="btn btn-primary btn-lg">
+            <i class="fas fa-rocket me-2"></i>Bắt Đầu Ngay
+        </a>
+    </div>
+}
+
+<style>
+    .hero-section {
+        background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);
+        border-radius: 25px;
+        margin-bottom: 40px;
+        padding: 60px 40px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.3);
+        animation: fadeInDown 0.8s ease-out;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 20px;
+        animation: fadeInUp 1s ease-out;
+    }
+
+    .hero-subtitle {
+        font-size: 1.3rem;
+        color: #6c757d;
+        animation: fadeInUp 1.2s ease-out;
+    }
+
+    .hero-icon {
+        animation: iconFloat 3s ease-in-out infinite;
+    }
+
+    @@keyframes iconFloat {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-15px) rotate(5deg); }
+    }
+
+    .feature-card {
+        background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);
+        border-radius: 20px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.3);
+        transition: all 0.3s ease;
+        padding: 30px;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 15px 50px rgba(102, 126, 234, 0.2), 0 0 0 1px rgba(255,255,255,0.4);
+    }
+
+    .feature-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover .feature-icon {
+        transform: scale(1.2) rotate(5deg);
+    }
+
+    .mode-card {
+        background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);
+        border-radius: 20px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.3);
+        transition: all 0.3s ease;
+    }
+
+    .mode-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15), 0 0 0 1px rgba(255,255,255,0.4);
+    }
+
+    .benefit-item {
+        padding: 25px;
+        transition: transform 0.3s ease;
+    }
+
+    .benefit-item:hover {
+        transform: translateY(-5px);
+    }
+
+    .benefit-item i {
+        color: #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .benefit-item:hover i {
+        transform: scale(1.2);
+        color: #764ba2;
+    }
+
+    .cta-section {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+        border-radius: 25px;
+        color: white;
+        padding: 60px 40px;
+        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+        backdrop-filter: blur(10px);
+        animation: fadeInUp 1.5s ease-out;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 40px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-outline-primary {
+        color: #667eea;
+        border: 2px solid #667eea;
+        border-radius: 25px;
+        padding: 12px 40px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: transparent;
+        color: white;
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    @@keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Game Mode Cards */
+    .game-mode-card {
+        background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.3);
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .game-mode-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 15px 50px rgba(102, 126, 234, 0.2), 0 0 0 1px rgba(255,255,255,0.4);
+    }
+
+    .mode-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .game-mode-card:hover .mode-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    /* Account Section */
+    .account-section {
+        margin-top: 40px;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+
+    .profile-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+    }
+
+    .info-item {
+        padding: 10px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .welcome-section {
+        animation: fadeInDown 0.8s ease-out;
+    }
+</style>
+
+@section Scripts {
+    <!-- Scripts are loaded in _Layout.cshtml -->
+}

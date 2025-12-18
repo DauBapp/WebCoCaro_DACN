@@ -1,0 +1,121 @@
+@model Web_chơi_cờ_Caro.Controllers.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+    var currentAvatar = string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "/images/default-avatar.png" : Model.AvatarUrl;
+}
+
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Chỉnh sửa thông tin</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Profile" asp-controller="Account" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-id-card me-2 text-primary"></i>Biệt danh hiển thị</label>
+                            <input asp-for="DisplayName" class="form-control" />
+                            <span asp-validation-for="DisplayName" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-user me-2 text-primary"></i>Tên đăng nhập (không thay đổi)</label>
+                            <input asp-for="UserName" class="form-control" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-envelope me-2 text-primary"></i>Email</label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label d-block"><i class="fas fa-image me-2 text-primary"></i>Ảnh đại diện</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="avatarPreview" src="@currentAvatar" class="rounded-circle border" width="72" height="72" style="object-fit: cover;" />
+                                <div>
+                                    <input asp-for="AvatarFile" class="form-control" accept="image/*" />
+                                    <small class="text-muted">Định dạng: JPG/PNG, kích thước phù hợp 256x256</small>
+                                </div>
+                            </div>
+                            <span asp-validation-for="AvatarFile" class="text-danger"></span>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Thông tin tài khoản</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3"><strong><i class="fas fa-calendar me-2 text-primary"></i>Ngày tạo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy")</li>
+                        @if (Model.LastLoginTime != null)
+                        {
+                            <li class="mb-3"><strong><i class="fas fa-clock me-2 text-primary"></i>Đăng nhập lần cuối:</strong> @Model.LastLoginTime?.ToString("dd/MM/yyyy HH:mm")</li>
+                        }
+                    </ul>
+                    <hr />
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("GameHistory", "Account")" class="btn btn-primary">
+                            <i class="fas fa-history me-2"></i>Xem lịch sử đấu
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // const input = document.querySelector('input[name="AvatarFile"]');
+        // const img = document.getElementById('avatarPreview');
+        // if (input && img) {
+        //     input.addEventListener('change', (e) => {
+        //         const file = e.target.files && e.target.files[0];
+        //         if (!file) return;
+        //         const reader = new FileReader();
+        //         reader.onload = (ev) => {
+        //             img.src = ev.target.result;
+        //         };
+        //         reader.readAsDataURL(file);
+        //     });
+        // }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const fileInput = document.querySelector('input[name="AvatarFile"]');
+        const previewImg = document.getElementById("avatarPreview");
+
+        if (fileInput && previewImg) {
+            fileInput.addEventListener("change", function (e) {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                // Chỉ cho phép ảnh
+                if (!file.type.startsWith("image/")) {
+                    e.target.value = "";
+                    alert("Vui lòng chọn file hình ảnh hợp lệ (JPG/PNG).");
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (ev) {
+                    previewImg.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    });
+
+    </script>
+}
+
+

@@ -1,0 +1,73 @@
+﻿@model Web_chơi_cờ_Caro.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="register-form">
+                <div class="text-center mb-4">
+                    <div class="register-icon mb-3">
+                        <i class="fas fa-user-plus fa-4x" style="color: #667eea; animation: iconFloat 3s ease-in-out infinite;"></i>
+                    </div>
+                    <h2 class="fw-bold" style="color: #333; margin-bottom: 10px;">Tạo tài khoản mới</h2>
+                    <p class="text-muted">Tham gia cùng chúng tôi ngay hôm nay!</p>
+                </div>
+
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-envelope me-2" style="color: #667eea;"></i>Email
+                        </label>
+                        <input asp-for="Email" class="form-control" placeholder="Nhập email của bạn" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-lock me-2" style="color: #667eea;"></i>Mật khẩu
+                        </label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Tối thiểu 6 ký tự" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-lock me-2" style="color: #667eea;"></i>Nhập lại mật khẩu
+                        </label>
+                        <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Xác nhận mật khẩu" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn w-100 fw-bold mb-3">
+                        <i class="fas fa-user-plus me-2"></i>Đăng ký
+                    </button>
+                    
+                    <div class="text-center">
+                        <p class="mb-0">Đã có tài khoản? <a href="/Account/Login" style="color: #667eea; text-decoration: none; font-weight: 600;">Đăng nhập ngay</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes iconFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .register-icon {
+        animation: fadeInDown 0.8s ease-out;
+    }
+</style>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
